@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: noti-system-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - noti_redis_data:/data
+    # networks:
+    #   - saga-network
+
+volumes:
+  noti_redis_data:
+    driver: local
+
+# networks:
+#   saga-network:
+#     driver: bridge

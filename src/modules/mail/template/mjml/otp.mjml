@@ -1,0 +1,135 @@
+<mjml>
+  <mj-head>
+    <mj-title>Mã xác thực OTP</mj-title>
+    <mj-preview>Mã OTP xác thực tài khoản của bạn</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="'Segoe UI', Arial, sans-serif" />
+      <mj-text font-size="15px" color="#374151" line-height="1.6" />
+    </mj-attributes>
+    <mj-style>
+      .otp-code {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 42px;
+        font-weight: 800;
+        letter-spacing: 10px;
+        color: #4c1d95;
+      }
+      .otp-label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #6b7280;
+        margin-bottom: 8px;
+      }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#f4f6f9">
+
+    <!-- Header -->
+    <mj-section background-color="#f4f6f9" padding="40px 0 0">
+      <mj-column>
+        <mj-image width="1px" src="" />
+      </mj-column>
+    </mj-section>
+
+    <mj-section
+      background-url=""
+      background-color="#667eea"
+      border-radius="12px 12px 0 0"
+      padding="36px 40px"
+      css-class="header-gradient"
+    >
+      <mj-column>
+        <mj-text
+          align="center"
+          font-size="24px"
+          font-weight="700"
+          color="#ffffff"
+          letter-spacing="-0.5px"
+          padding-bottom="8px"
+        >
+          {{appName}}
+        </mj-text>
+        <mj-text
+          align="center"
+          font-size="14px"
+          color="rgba(255,255,255,0.85)"
+          padding-top="0"
+        >
+          Xác thực danh tính
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Body -->
+    <mj-section background-color="#ffffff" padding="40px 40px 28px">
+      <mj-column>
+        <mj-text font-size="16px" color="#374151" padding-bottom="8px">
+          Xin chào <strong>{{userName}}</strong>,
+        </mj-text>
+        <mj-text font-size="15px" color="#6b7280" padding-top="0" padding-bottom="28px">
+          Chúng tôi nhận được yêu cầu xác thực tài khoản của bạn. Vui lòng sử dụng mã OTP dưới đây:
+        </mj-text>
+
+        <!-- OTP Box -->
+        <mj-section
+          background-color="#f3f0ff"
+          border="2px dashed #764ba2"
+          border-radius="12px"
+          padding="28px 20px"
+        >
+          <mj-column>
+            <mj-text align="center" css-class="otp-label" padding-bottom="8px">
+              Mã xác thực
+            </mj-text>
+            <mj-text align="center" css-class="otp-code" padding-top="0">
+              {{otpCode}}
+            </mj-text>
+          </mj-column>
+        </mj-section>
+
+        <mj-text align="center" font-size="14px" color="#6b7280" padding-top="20px" padding-bottom="20px">
+          ⏱ Mã này có hiệu lực trong <strong style="color:#374151;">{{expiresInMinutes}} phút</strong>
+        </mj-text>
+
+        <!-- Warning Box -->
+        <mj-section
+          background-color="#fff7ed"
+          border-left="4px solid #f97316"
+          border-radius="4px"
+          padding="14px 16px"
+        >
+          <mj-column>
+            <mj-text font-size="13px" color="#92400e" line-height="1.6" padding="0">
+              ⚠️ <strong>Bảo mật:</strong> Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên của chúng tôi.
+              Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.
+            </mj-text>
+          </mj-column>
+        </mj-section>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section
+      background-color="#f9fafb"
+      border-top="1px solid #e5e7eb"
+      border-radius="0 0 12px 12px"
+      padding="24px 40px"
+    >
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#9ca3af" padding="0">
+          © {{year}} {{appName}}. Tất cả quyền được bảo lưu.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#f4f6f9" padding="0 0 40px">
+      <mj-column>
+        <mj-image width="1px" src="" />
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>
+

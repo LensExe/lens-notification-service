@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: noti-system-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: noti_system_db
+      POSTGRES_USER: noti_system_db_user
+      POSTGRES_PASSWORD: noti_system_db_password
+    ports:
+      - '5433:5432'
+    volumes:
+      - noti_system_postgres_data:/var/lib/postgresql/data
+    # networks:
+    #   - saga-network
+
+volumes:
+  noti_system_postgres_data:
+    driver: local
+
+# networks:
+#   saga-network:
+#     driver: bridge
