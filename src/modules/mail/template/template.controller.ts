@@ -3,8 +3,10 @@ import { TemplateService } from './template.service';
 import { TemplateVariableDto } from './dto/template_variable.dto';
 import { EmailTemplateDto } from './dto/email_template.dto';
 import { EmailTemplate } from '../entity/email_template.entity';
+import { RequireRoles } from '../../../common/security/role.guard';
 
 @Controller('mail/templates')
+@RequireRoles('admin')
 export class TemplateController {
   constructor(private readonly templateService: TemplateService) {}
 

@@ -6,7 +6,12 @@ import { JwtPayload, verify } from 'jsonwebtoken';
 export interface Principal extends JwtPayload {
   sub: string;
   exp: number;
+  roles: string[];
 }
+
+type KeycloakRoleClaims = {
+  roles?: unknown;
+};
 
 @Injectable()
 export class KeycloakJwtVerifier {
@@ -40,7 +45,22 @@ export class KeycloakJwtVerifier {
       ) {
         throw new Error('Missing required claims');
       }
-      return claims as Principal;
+      const roleClaims = claims as JwtPayload & {
+        roles?: unknown;
+        realm_access?: KeycloakRoleClaims;
+        resource_access?: Record<string, KeycloakRoleClaims>;
+      };
+      const resourceRoles = roleClaims.resource_access?.[this.audience]?.roles;
+      const roles = [roleClaims.roles, roleClaims.realm_access?.roles, resourceRoles].flatMap(
+        (value) =>
+          Array.isArray(value)
+            ? value.filter((role): role is string => typeof role === 'string')
+            : [],
+      );
+      return {
+        ...claims,
+        roles: [...new Set(roles)],
+      } as Principal;
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }

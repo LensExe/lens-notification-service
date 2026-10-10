@@ -2,8 +2,10 @@ import { Controller, Post, Body, HttpCode, HttpStatus, Param, ParseEnumPipe } fr
 import { QueueService } from '../queue/queue.service';
 import { SendSingleMailDto, SendBulkMailDto } from './dto/send-mail.dto';
 import { MailJobName } from './enum/mail.enum';
+import { RequireRoles } from '../../../common/security/role.guard';
 
 @Controller('mail')
+@RequireRoles('admin')
 export class MailController {
   constructor(private readonly queueService: QueueService) {}
 

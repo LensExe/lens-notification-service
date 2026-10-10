@@ -17,7 +17,7 @@ describe('Single service routing and authentication', () => {
   const keys = generateKeyPairSync('rsa', { modulusLength: 2048 });
   const issuer = 'https://identity.example.com/realms/test';
   const audience = 'notification-service';
-  const token = sign({ typ: 'Bearer' }, keys.privateKey, {
+  const token = sign({ typ: 'Bearer', roles: ['admin'] }, keys.privateKey, {
     algorithm: 'RS256',
     issuer,
     audience,

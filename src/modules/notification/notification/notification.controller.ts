@@ -12,12 +12,14 @@ import {
 import { NotificationService } from './notification.service';
 import { NotificationDto } from './dto/notification.dto';
 import type { AuthenticatedRequest } from '../../../common/security/keycloak-jwt.guard';
+import { RequireRoles } from '../../../common/security/role.guard';
 
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post()
+  @RequireRoles('admin')
   create(@Body() body: NotificationDto) {
     return this.notificationService.notifyUser(body);
   }
