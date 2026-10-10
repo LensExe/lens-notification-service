@@ -2,6 +2,10 @@ export enum TemplateTypeEnum {
   WELCOME = 'welcome',
   OTP = 'otp',
   RESET_PASSWORD = 'reset_password',
+  ORDER_CONFIRMATION = 'order_confirmation',
+  PAYMENT_RECEIPT = 'payment_receipt',
+  SHIPPING_UPDATE = 'shipping_update',
+  PROMOTION_CAMPAIGN = 'promotion_campaign',
 }
 
 const TEMPLATE_TYPE_VALUES = new Set<string>(Object.values(TemplateTypeEnum));

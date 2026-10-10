@@ -44,6 +44,19 @@ export class JobTemplateService {
     return newRecords;
   }
 
+  async assertActiveTemplateIds(templateIds: Iterable<string>): Promise<void> {
+    const uniqueIds = [...new Set(templateIds)];
+    if (uniqueIds.length === 0) return;
+
+    const templates = await Promise.all(
+      uniqueIds.map((templateId) => this.templateService.getTemplateById(templateId)),
+    );
+    const missingIds = uniqueIds.filter((_, index) => !templates[index]);
+    if (missingIds.length > 0) {
+      throw new Error(`Active email template not found: ${missingIds.join(', ')}`);
+    }
+  }
+
   async createJobTemplate(input: CreateJobTemplateDto): Promise<JobTemplate> {
     const jobTemplate = this.jobTemplateRepository.create(input);
     const saved = await this.jobTemplateRepository.save(jobTemplate);

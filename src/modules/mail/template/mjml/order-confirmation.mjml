@@ -1,0 +1,59 @@
+<mjml>
+  <mj-head>
+    <mj-title>Đơn hàng {{orderNumber}} đã được xác nhận</mj-title>
+    <mj-preview>Đơn hàng của bạn đã được tiếp nhận thành công.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="'Segoe UI', Arial, sans-serif" />
+      <mj-text font-size="15px" color="#334155" line-height="1.7" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f1f5f9">
+    <mj-section padding="36px 0 0">
+      <mj-column>
+        <mj-text align="center" font-size="22px" font-weight="700" color="#0f172a">
+          {{appName}}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" border-radius="12px 12px 0 0" padding="32px 36px 12px">
+      <mj-column>
+        <mj-text align="center" font-size="24px" font-weight="700" color="#0f766e">
+          Đơn hàng đã được xác nhận
+        </mj-text>
+        <mj-text>Xin chào <strong>{{customerName}}</strong>,</mj-text>
+        <mj-text>Cảm ơn bạn đã mua sắm. Chúng tôi đã tiếp nhận đơn hàng và đang chuẩn bị xử lý.</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="8px 36px 24px">
+      <mj-column background-color="#f8fafc" border-radius="8px" padding="16px">
+        <mj-text padding="4px 0"><strong>Mã đơn hàng:</strong> {{orderNumber}}</mj-text>
+        <mj-text padding="4px 0"><strong>Ngày đặt:</strong> {{orderDate}}</mj-text>
+        <mj-text padding="4px 0"><strong>Tạm tính:</strong> {{subtotal}} {{currency}}</mj-text>
+        <mj-text padding="4px 0"><strong>Phí giao hàng:</strong> {{shippingFee}} {{currency}}</mj-text>
+        <mj-divider border-color="#cbd5e1" />
+        <mj-text font-size="17px" font-weight="700" color="#0f172a" padding="4px 0">
+          Tổng thanh toán: {{totalAmount}} {{currency}}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="0 36px 16px">
+      <mj-column>
+        <mj-button href="{{orderUrl}}" background-color="#0f766e" border-radius="7px" font-size="15px" font-weight="700" padding="8px 0">
+          Xem chi tiết đơn hàng
+        </mj-button>
+        <mj-text align="center" font-size="13px" color="#64748b">
+          Chúng tôi sẽ gửi email khác khi đơn hàng được giao cho đơn vị vận chuyển.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#f8fafc" border-radius="0 0 12px 12px" padding="20px 36px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#64748b">
+          Cần hỗ trợ? Liên hệ <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.<br />
+          © {{year}} {{appName}}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 36px"><mj-column /></mj-section>
+  </mj-body>
+</mjml>

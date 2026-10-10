@@ -37,18 +37,30 @@ export class MailgunService implements IMailProvider {
         html: input.html,
         text: input.html,
       });
-      this.logger.log(`[Mailgun] Email sent: to=${input.to}, status=${response.status}`);
+      this.logger.log(
+        `[Mailgun] Email sent: to=${this.maskEmail(input.to)}, status=${response.status}`,
+      );
       return { provider: 'mailgun', statusCode: response.status };
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
         const status = error.response?.status ?? 0;
         const body = JSON.stringify(error.response?.data);
-        this.logger.error(`[Mailgun] HTTP ${status} sending to=${input.to}: ${body}`);
+        this.logger.error(
+          `[Mailgun] HTTP ${status} sending to=${this.maskEmail(input.to)}: ${body}`,
+        );
         throw new InternalServerErrorException(`Mailgun API error (${status}): ${error.message}`);
       }
       const msg = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`[Mailgun] Unexpected error sending to=${input.to}: ${msg}`);
+      this.logger.error(
+        `[Mailgun] Unexpected error sending to=${this.maskEmail(input.to)}: ${msg}`,
+      );
       throw new InternalServerErrorException('Unexpected email sending error');
     }
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.trim().split('@');
+    if (!local || !domain) return '[invalid-email]';
+    return `${local.slice(0, 1)}***@${domain}`;
   }
 }

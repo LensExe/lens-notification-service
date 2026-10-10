@@ -79,35 +79,19 @@
         </mj-text>
 
         <!-- Feature: Email notifications -->
-        <mj-section background-color="#f0fdf4" border-radius="8px" padding="12px 16px">
-          <mj-column>
-            <mj-text font-size="14px" color="#065f46" font-weight="600" padding="0">
-              📧&nbsp;&nbsp;Thông báo qua Email
-            </mj-text>
-          </mj-column>
-        </mj-section>
-
-        <mj-section padding="4px 0" />
+        <mj-text font-size="14px" color="#065f46" font-weight="600" background-color="#f0fdf4" padding="12px 16px">
+          📧&nbsp;&nbsp;Thông báo qua Email
+        </mj-text>
 
         <!-- Feature: Real-time processing -->
-        <mj-section background-color="#f0fdf4" border-radius="8px" padding="12px 16px">
-          <mj-column>
-            <mj-text font-size="14px" color="#065f46" font-weight="600" padding="0">
-              ⚡&nbsp;&nbsp;Xử lý thời gian thực
-            </mj-text>
-          </mj-column>
-        </mj-section>
-
-        <mj-section padding="4px 0" />
+        <mj-text font-size="14px" color="#065f46" font-weight="600" background-color="#f0fdf4" padding="12px 16px">
+          ⚡&nbsp;&nbsp;Xử lý thời gian thực
+        </mj-text>
 
         <!-- Feature: Flexible notifications -->
-        <mj-section background-color="#f0fdf4" border-radius="8px" padding="12px 16px">
-          <mj-column>
-            <mj-text font-size="14px" color="#065f46" font-weight="600" padding="0">
-              🔔&nbsp;&nbsp;Quản lý thông báo linh hoạt
-            </mj-text>
-          </mj-column>
-        </mj-section>
+        <mj-text font-size="14px" color="#065f46" font-weight="600" background-color="#f0fdf4" padding="12px 16px">
+          🔔&nbsp;&nbsp;Quản lý thông báo linh hoạt
+        </mj-text>
       </mj-column>
     </mj-section>
 
@@ -162,4 +146,3 @@
 
   </mj-body>
 </mjml>
-

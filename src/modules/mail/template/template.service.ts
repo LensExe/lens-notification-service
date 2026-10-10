@@ -23,7 +23,7 @@ export class TemplateService {
    */
   async getTemplate(template_type: TemplateTypeEnum, version: string) {
     const template: EmailTemplate | null = await this.templateRepository.findOne({
-      where: { template_type: template_type, version: version },
+      where: { template_type: template_type, version: version, is_active: true },
       select: ['id'],
     });
     return template;
@@ -34,7 +34,7 @@ export class TemplateService {
    */
   async getTemplateById(template_id: string) {
     const template: EmailTemplate | null = await this.templateRepository.findOne({
-      where: { id: template_id },
+      where: { id: template_id, is_active: true },
       select: ['id', 'template_type', 'version', 'subject', 'body', 'engine'],
       relations: ['template_variables'],
     });
@@ -65,6 +65,12 @@ export class TemplateService {
     // Handlebars escapes HTML by default; use triple braces {{{ }}} only if
     // values may contain trusted HTML. For plain text values, double {{ }} is safe.
     const compiled = Handlebars.compile(templateHtml);
+    return compiled(data);
+  }
+
+  /** Render plain-text subject content without HTML escaping. */
+  renderSubjectTemplate(subject: string, data: Record<string, string>): string {
+    const compiled = Handlebars.compile(subject, { noEscape: true });
     return compiled(data);
   }
 

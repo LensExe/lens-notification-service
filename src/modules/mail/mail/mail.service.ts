@@ -44,7 +44,14 @@ export class MailService {
     }
 
     const html = await this.templateService.renderMjmlTemplate(template.body, templateVariables);
-    this.logger.log(`Sending email to=${to}`);
-    await this.mailProvider.sendEmail({ to, subject: template.subject, html });
+    const subject = this.templateService.renderSubjectTemplate(template.subject, templateVariables);
+    this.logger.log(`Sending email to=${this.maskEmail(to)}`);
+    await this.mailProvider.sendEmail({ to, subject, html });
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.trim().split('@');
+    if (!local || !domain) return '[invalid-email]';
+    return `${local.slice(0, 1)}***@${domain}`;
   }
 }

@@ -2,6 +2,10 @@ export enum MailJobName {
   SEND_OTP = 'send-otp-email',
   SEND_TRANSACTIONAL = 'send-transactional-email',
   SEND_WELCOME = 'send-welcome-email',
+  SEND_ORDER_CONFIRMATION = 'send-order-confirmation-email',
+  SEND_PAYMENT_RECEIPT = 'send-payment-receipt-email',
+  SEND_SHIPPING_UPDATE = 'send-shipping-update-email',
+  SEND_PROMOTION = 'send-promotion-email',
 }
 
 const MAIL_JOB_NAME_VALUES = new Set<string>(Object.values(MailJobName));

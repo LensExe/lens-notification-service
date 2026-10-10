@@ -73,40 +73,20 @@
         </mj-text>
 
         <!-- OTP Box -->
-        <mj-section
-          background-color="#f3f0ff"
-          border="2px dashed #764ba2"
-          border-radius="12px"
-          padding="28px 20px"
-        >
-          <mj-column>
-            <mj-text align="center" css-class="otp-label" padding-bottom="8px">
-              Mã xác thực
-            </mj-text>
-            <mj-text align="center" css-class="otp-code" padding-top="0">
-              {{otpCode}}
-            </mj-text>
-          </mj-column>
-        </mj-section>
+        <mj-text align="center" background-color="#f3f0ff" padding="24px 20px">
+          <span class="otp-label">Mã xác thực</span><br />
+          <span class="otp-code">{{otpCode}}</span>
+        </mj-text>
 
         <mj-text align="center" font-size="14px" color="#6b7280" padding-top="20px" padding-bottom="20px">
           ⏱ Mã này có hiệu lực trong <strong style="color:#374151;">{{expiresInMinutes}} phút</strong>
         </mj-text>
 
         <!-- Warning Box -->
-        <mj-section
-          background-color="#fff7ed"
-          border-left="4px solid #f97316"
-          border-radius="4px"
-          padding="14px 16px"
-        >
-          <mj-column>
-            <mj-text font-size="13px" color="#92400e" line-height="1.6" padding="0">
-              ⚠️ <strong>Bảo mật:</strong> Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên của chúng tôi.
-              Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.
-            </mj-text>
-          </mj-column>
-        </mj-section>
+        <mj-text font-size="13px" color="#92400e" line-height="1.6" background-color="#fff7ed" padding="14px 16px">
+          ⚠️ <strong>Bảo mật:</strong> Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên của chúng tôi.
+          Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.
+        </mj-text>
       </mj-column>
     </mj-section>
 
@@ -132,4 +112,3 @@
 
   </mj-body>
 </mjml>
-

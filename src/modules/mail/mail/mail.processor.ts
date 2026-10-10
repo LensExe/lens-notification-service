@@ -14,8 +14,14 @@ export class MailSingleProcessor extends WorkerHost {
   }
 
   async process(job: Job<SendSingleMailDto>): Promise<void> {
-    this.logger.log(`Processing job [${job.name}] id=${job.id} to=${job.data.to}`);
+    this.logger.log(`Processing job [${job.name}] id=${job.id} to=${this.maskEmail(job.data.to)}`);
     await this.mailService.sendEmail(job.data);
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.trim().split('@');
+    if (!local || !domain) return '[invalid-email]';
+    return `${local.slice(0, 1)}***@${domain}`;
   }
 }
 
@@ -28,7 +34,15 @@ export class MailBulkProcessor extends WorkerHost {
   }
 
   async process(job: Job<SendSingleMailDto>): Promise<void> {
-    this.logger.log(`Processing bulk job [${job.name}] id=${job.id} to=${job.data.to}`);
+    this.logger.log(
+      `Processing bulk job [${job.name}] id=${job.id} to=${this.maskEmail(job.data.to)}`,
+    );
     await this.mailService.sendEmail(job.data);
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.trim().split('@');
+    if (!local || !domain) return '[invalid-email]';
+    return `${local.slice(0, 1)}***@${domain}`;
   }
 }

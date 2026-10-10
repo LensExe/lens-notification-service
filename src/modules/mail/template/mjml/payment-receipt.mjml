@@ -1,0 +1,48 @@
+<mjml>
+  <mj-head>
+    <mj-title>Thanh toán đơn {{orderNumber}} thành công</mj-title>
+    <mj-preview>Biên nhận thanh toán đơn hàng của bạn.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="'Segoe UI', Arial, sans-serif" />
+      <mj-text font-size="15px" color="#334155" line-height="1.7" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f1f5f9">
+    <mj-section padding="36px 0 0">
+      <mj-column>
+        <mj-text align="center" font-size="22px" font-weight="700" color="#0f172a">{{appName}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" border-radius="12px 12px 0 0" padding="32px 36px 12px">
+      <mj-column>
+        <mj-text align="center" font-size="24px" font-weight="700" color="#15803d">Thanh toán thành công</mj-text>
+        <mj-text>Xin chào <strong>{{customerName}}</strong>,</mj-text>
+        <mj-text>Chúng tôi đã nhận được khoản thanh toán cho đơn hàng <strong>{{orderNumber}}</strong>.</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="8px 36px 24px">
+      <mj-column background-color="#f8fafc" border-radius="8px" padding="16px">
+        <mj-text padding="4px 0"><strong>Số tiền:</strong> {{amount}} {{currency}}</mj-text>
+        <mj-text padding="4px 0"><strong>Thời gian:</strong> {{paymentDate}}</mj-text>
+        <mj-text padding="4px 0"><strong>Phương thức:</strong> {{paymentMethod}}</mj-text>
+        <mj-text padding="4px 0"><strong>Mã giao dịch:</strong> {{transactionId}}</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="0 36px 24px">
+      <mj-column>
+        <mj-button href="{{receiptUrl}}" background-color="#15803d" border-radius="7px" font-size="15px" font-weight="700">
+          Xem biên nhận
+        </mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#f8fafc" border-radius="0 0 12px 12px" padding="20px 36px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#64748b">
+          Nếu bạn cần hỗ trợ, hãy liên hệ <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.<br />
+          © {{year}} {{appName}}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 36px"><mj-column /></mj-section>
+  </mj-body>
+</mjml>

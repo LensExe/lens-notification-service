@@ -39,13 +39,23 @@ export class SendGridService implements IMailProvider {
 
     try {
       const [response] = await sgMail.send(msg);
-      this.logger.log(`[SendGrid] Email sent: to=${input.to}, statusCode=${response.statusCode}`);
+      this.logger.log(
+        `[SendGrid] Email sent: to=${this.maskEmail(input.to)}, statusCode=${response.statusCode}`,
+      );
 
       return { provider: 'sendgrid', statusCode: response.statusCode };
     } catch (error: unknown) {
       const sendGridError = error as ResponseError;
-      this.logger.error(`[SendGrid] Failed to send to=${input.to}: ${sendGridError.message}`);
+      this.logger.error(
+        `[SendGrid] Failed to send to=${this.maskEmail(input.to)}: ${sendGridError.message}`,
+      );
       throw sendGridError;
     }
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.trim().split('@');
+    if (!local || !domain) return '[invalid-email]';
+    return `${local.slice(0, 1)}***@${domain}`;
   }
 }
