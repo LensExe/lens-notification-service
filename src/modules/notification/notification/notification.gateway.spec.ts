@@ -1,15 +1,6 @@
-import { ConfigService } from '@nestjs/config';
 import { Namespace, Socket } from 'socket.io';
 import { NotificationGateway } from './notification.gateway';
 import { KeycloakJwtVerifier } from '../../../common/security/keycloak-jwt.verifier';
-
-jest.mock('ioredis', () => ({
-  Redis: jest.fn().mockImplementation(() => ({
-    duplicate: jest.fn().mockReturnValue({ disconnect: jest.fn() }),
-    disconnect: jest.fn(),
-  })),
-}));
-jest.mock('@socket.io/redis-adapter', () => ({ createAdapter: jest.fn() }));
 
 describe('Notification WebSocket identity', () => {
   const verify = jest.fn();
@@ -19,11 +10,8 @@ describe('Notification WebSocket identity', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     verify.mockReset();
-    gateway = new NotificationGateway(new ConfigService(), {
-      verify,
-    } as unknown as KeycloakJwtVerifier);
+    gateway = new NotificationGateway({ verify } as unknown as KeycloakJwtVerifier);
     const namespace = {
-      server: { adapter: jest.fn() },
       use: (middleware: typeof authenticate) => {
         authenticate = middleware;
       },
@@ -63,9 +51,24 @@ describe('Notification WebSocket identity', () => {
     expect(next).toHaveBeenCalledWith();
     await gateway.handleConnection(client);
     expect(join).toHaveBeenCalledWith('user:verified-user');
+    expect(join).toHaveBeenCalledTimes(1);
     jest.advanceTimersByTime(2000);
     expect(disconnect).toHaveBeenCalledWith(true);
     gateway.handleDisconnect(client);
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('emits notification and chat events only to their user rooms', () => {
+    const emit = jest.fn();
+    const to = jest.fn().mockReturnValue({ emit });
+    gateway.server = { to } as unknown as Namespace;
+
+    gateway.sendNotification('user-1', { title: 'Order placed' });
+    gateway.sendChatEvent('user-2', { event_id: 'chat-1' });
+
+    expect(to).toHaveBeenNthCalledWith(1, 'user:user-1');
+    expect(emit).toHaveBeenNthCalledWith(1, 'notification', { title: 'Order placed' });
+    expect(to).toHaveBeenNthCalledWith(2, 'user:user-2');
+    expect(emit).toHaveBeenNthCalledWith(2, 'chat.event', { event_id: 'chat-1' });
   });
 });

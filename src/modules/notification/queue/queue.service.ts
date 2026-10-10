@@ -11,13 +11,14 @@ export class QueueService {
     private readonly notiQueue: Queue,
   ) {}
 
-  async enqueueNotification(jobDto: JobDto): Promise<void> {
+  async enqueueNotification(jobDto: JobDto, jobId?: string): Promise<void> {
     const { type, delay, payload } = jobDto;
     await this.notiQueue.add(type, payload, {
       priority: type === NotificationJobName.EMERGENCY ? 1 : 10,
       delay: type === NotificationJobName.SCHEDULED ? delay : 0,
       attempts: 3,
       backoff: { type: 'exponential', delay: 2000 },
+      ...(jobId ? { jobId } : {}),
     });
   }
 }
