@@ -29,6 +29,7 @@ import { NotificationContextModule } from './modules/notification/notification-c
         connection: {
           host: config.get('REDIS_HOST', 'localhost'),
           port: Number(config.get('REDIS_PORT', 6379)),
+          password: config.getOrThrow<string>('REDIS_PASSWORD'),
           db: Number(config.get('REDIS_DB', 0)),
         },
         defaultJobOptions: {

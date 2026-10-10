@@ -1,0 +1,83 @@
+name: noti-system-docker
+
+services:
+  kafka:
+    image: docker.io/bitnamilegacy/kafka:3.9
+    ports:
+      - '9092:9092' # 9092 là cổng để giao tiếp local với container khác
+      - '19092:19092' # 19092 là cổng để giao tiếp docker/ ngoài container
+    volumes:
+      - 'kafka_data:/bitnami'
+    environment:
+      # KRaft settings thay cho zookeeper
+      KAFKA_CFG_NODE_ID: '0'
+      KAFKA_CFG_PROCESS_ROLES: 'controller,broker'
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '0@kafka:9093'
+      # Listeners
+      KAFKA_CFG_LISTENERS: 'INTERNAL://:9094,CONTROLLER://:9093,LOCAL://:9092,DOCKER://:19092'
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'INTERNAL://kafka:9094,CONTROLLER://kafka:9093,LOCAL://localhost:9092,DOCKER://host.docker.internal:19092'
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:SASL_PLAINTEXT,INTERNAL:PLAINTEXT,LOCAL:SASL_PLAINTEXT,DOCKER:SASL_PLAINTEXT'
+      KAFKA_CFG_SASL_MECHANISM_CONTROLLER_PROTOCOL: 'PLAIN'
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN'
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_CLIENT_USERS: 'kafka'
+      KAFKA_CLIENT_PASSWORDS: 'kafka-secret-password'
+      KAFKA_CLIENT_LISTENER_NAME: 'DOCKER_INTERNAL,HOST_EXTERNAL'
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+    networks:
+      - lens-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    restart: always
+    ports:
+      - '8080:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: 'kafka'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9094'
+    networks:
+      - lens-network
+
+  notification-mongodb:
+    image: mongo:6
+    container_name: noti-system-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: noti_system_db_user
+      MONGO_INITDB_ROOT_PASSWORD: noti_system_db_password
+      MONGO_INITDB_DATABASE: noti_system_db
+    ports:
+      - '27017:27017'
+    volumes:
+      - noti_mongo_data:/data/db
+    networks:
+      - lens-network
+
+  notification-postgres:
+    image: postgres:16-alpine
+    container_name: noti-system-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: noti_system_db
+      POSTGRES_USER: noti_system_db_user
+      POSTGRES_PASSWORD: noti_system_db_password
+    ports:
+      - '5433:5432'
+    volumes:
+      - noti_system_postgres_data:/var/lib/postgresql/data
+    networks:
+      - lens-network
+
+volumes:
+  kafka_data:
+    driver: local
+  noti_mongo_data:
+    driver: local
+  noti_system_postgres_data:
+    driver: local
+networks:
+  lens-network:
+    external: true
+    name: lens-network
