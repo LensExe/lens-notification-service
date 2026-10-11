@@ -1,0 +1,15 @@
+.git
+.docker
+.env
+.env.*
+!.env.example
+node_modules
+dist
+coverage
+.pnpm-store
+*.tsbuildinfo
+*.log
+.DS_Store
+test
+sql
+noti-system-docker

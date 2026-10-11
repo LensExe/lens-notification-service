@@ -43,10 +43,14 @@ yarn.lock
 
 # dotenv environment variable files
 .env
+.env.*
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
+
+# Portainer production secrets
+/deploy/portainer/env.production
 
 # temp directory
 .temp

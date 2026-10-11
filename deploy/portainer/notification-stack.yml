@@ -1,0 +1,168 @@
+name: lens-notification
+
+services:
+  notification:
+    image: '${NOTIFICATION_IMAGE:-ghcr.io/${IMAGE_OWNER:-lensexe}/lens-notification:${IMAGE_TAG:-latest}}'
+    pull_policy: '${NOTIFICATION_PULL_POLICY:-always}'
+    environment:
+      NODE_ENV: '${NODE_ENV:-production}'
+      PORT: '${PORT:-3001}'
+
+      KAFKA_ENABLED: '${KAFKA_ENABLED:-true}'
+      KAFKA_BROKERS: '${KAFKA_BROKERS:-kafka:9094}'
+      KAFKA_CLIENT_ID: '${KAFKA_CLIENT_ID:-notification-service}'
+      KAFKA_GROUP_ID: '${KAFKA_GROUP_ID:-notification-service}'
+      KAFKA_NOTIFICATION_EVENTS_TOPIC: '${KAFKA_NOTIFICATION_EVENTS_TOPIC:-notification.events}'
+      KAFKA_NOTIFICATION_EVENTS_DLQ_TOPIC: '${KAFKA_NOTIFICATION_EVENTS_DLQ_TOPIC:-notification.events.dlq}'
+      KAFKA_FROM_BEGINNING: '${KAFKA_FROM_BEGINNING:-false}'
+      KAFKA_MAIL_COMMANDS_TOPIC: '${KAFKA_MAIL_COMMANDS_TOPIC:-notification.mail.commands.v1}'
+      KAFKA_MAIL_COMMANDS_DLQ_TOPIC: '${KAFKA_MAIL_COMMANDS_DLQ_TOPIC:-notification.mail.commands.v1.dlq}'
+      KAFKA_MAIL_COMMANDS_GROUP_ID: '${KAFKA_MAIL_COMMANDS_GROUP_ID:-notification-mail}'
+      KAFKA_MAIL_COMMANDS_FROM_BEGINNING: '${KAFKA_MAIL_COMMANDS_FROM_BEGINNING:-false}'
+      KAFKA_CHAT_EVENTS_TOPIC: '${KAFKA_CHAT_EVENTS_TOPIC:-chat.conversation.events.v1}'
+      KAFKA_CHAT_EVENTS_DLQ_TOPIC: '${KAFKA_CHAT_EVENTS_DLQ_TOPIC:-chat.conversation.events.v1.dlq}'
+      KAFKA_CHAT_EVENTS_GROUP_ID: '${KAFKA_CHAT_EVENTS_GROUP_ID:-notification-chat-realtime}'
+      KAFKA_CHAT_EVENTS_FROM_BEGINNING: '${KAFKA_CHAT_EVENTS_FROM_BEGINNING:-false}'
+      KAFKA_USERNAME: '${KAFKA_USERNAME:-kafka}'
+      KAFKA_PASSWORD: '${KAFKA_PASSWORD:?Set KAFKA_PASSWORD in Portainer}'
+      KAFKA_SSL: '${KAFKA_SSL:-false}'
+
+      MONGO_URI: '${MONGO_URI:?Set MONGO_URI in Portainer}'
+      MONGO_DB_NAME: '${MONGO_DB_NAME:-noti_system_db}'
+      REDIS_HOST: '${REDIS_HOST:-lens-redis}'
+      REDIS_PORT: '${REDIS_PORT:-6379}'
+      REDIS_DB: '${REDIS_DB:-1}'
+      REDIS_PASSWORD: '${REDIS_PASSWORD:?Set REDIS_PASSWORD in Portainer}'
+
+      KEYCLOAK_ISSUER: '${KEYCLOAK_ISSUER:?Set KEYCLOAK_ISSUER in Portainer}'
+      KEYCLOAK_AUDIENCE: '${KEYCLOAK_AUDIENCE:?Set KEYCLOAK_AUDIENCE in Portainer}'
+      KEYCLOAK_PUBLIC_KEY: '${KEYCLOAK_PUBLIC_KEY:?Set KEYCLOAK_PUBLIC_KEY in Portainer}'
+
+      MAIL_PROVIDER_NAME: '${MAIL_PROVIDER_NAME:-mailgun}'
+      MAILGUN_API_KEY: '${MAILGUN_API_KEY:-}'
+      MAILGUN_BASE_URL: '${MAILGUN_BASE_URL:-https://api.mailgun.net}'
+      MAILGUN_DOMAIN: '${MAILGUN_DOMAIN:-}'
+      MAILGUN_FROM_EMAIL: '${MAILGUN_FROM_EMAIL:-}'
+      SENDGRID_API_KEY: '${SENDGRID_API_KEY:-}'
+      SENDGRID_FROM_EMAIL: '${SENDGRID_FROM_EMAIL:-}'
+      SENDGRID_FROM_NAME: '${SENDGRID_FROM_NAME:-Notification System}'
+    ports:
+      - '127.0.0.1:${NOTIFICATION_HOST_PORT:-3001}:3001'
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      notification-mongodb:
+        condition: service_healthy
+    networks:
+      - lens-network
+      - lens-proxy
+    restart: unless-stopped
+
+  kafka:
+    image: '${KAFKA_IMAGE:-docker.io/bitnamilegacy/kafka:3.9}'
+    pull_policy: '${KAFKA_PULL_POLICY:-missing}'
+    environment:
+      KAFKA_CFG_NODE_ID: '0'
+      KAFKA_CFG_PROCESS_ROLES: 'controller,broker'
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: '0@kafka:9093'
+      KAFKA_CFG_LISTENERS: 'INTERNAL://:9094,CONTROLLER://:9093'
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'INTERNAL://kafka:9094'
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:SASL_PLAINTEXT,INTERNAL:SASL_PLAINTEXT'
+      KAFKA_CFG_SASL_ENABLED_MECHANISMS: 'PLAIN'
+      KAFKA_CFG_SASL_MECHANISM_CONTROLLER_PROTOCOL: 'PLAIN'
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN'
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_CLIENT_USERS: '${KAFKA_USERNAME:-kafka}'
+      KAFKA_CLIENT_PASSWORDS: '${KAFKA_PASSWORD:?Set KAFKA_PASSWORD in Portainer}'
+      KAFKA_CLIENT_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_USER: '${KAFKA_CONTROLLER_USER:-controller}'
+      KAFKA_CONTROLLER_PASSWORD: '${KAFKA_CONTROLLER_PASSWORD:?Set KAFKA_CONTROLLER_PASSWORD in Portainer}'
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+    volumes:
+      - kafka-data:/bitnami
+    networks:
+      - lens-network
+    restart: unless-stopped
+
+  kafka-init:
+    image: '${KAFKA_IMAGE:-docker.io/bitnamilegacy/kafka:3.9}'
+    pull_policy: '${KAFKA_PULL_POLICY:-missing}'
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_USERNAME: '${KAFKA_USERNAME:-kafka}'
+      KAFKA_PASSWORD: '${KAFKA_PASSWORD:?Set KAFKA_PASSWORD in Portainer}'
+      KAFKA_TOPIC_PARTITIONS: '${KAFKA_TOPIC_PARTITIONS:-1}'
+    entrypoint: ['/bin/bash', '-ec']
+    command:
+      - |
+        cat >/tmp/kafka-client.properties <<EOF
+        security.protocol=SASL_PLAINTEXT
+        sasl.mechanism=PLAIN
+        sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="$$KAFKA_USERNAME" password="$$KAFKA_PASSWORD";
+        EOF
+
+        until /opt/bitnami/kafka/bin/kafka-topics.sh \
+          --bootstrap-server kafka:9094 \
+          --command-config /tmp/kafka-client.properties \
+          --list >/dev/null 2>&1; do
+          sleep 2
+        done
+
+        for topic in \
+          notification.events \
+          notification.events.dlq \
+          notification.mail.commands.v1 \
+          notification.mail.commands.v1.dlq \
+          chat.conversation.events.v1 \
+          chat.conversation.events.v1.dlq; do
+          /opt/bitnami/kafka/bin/kafka-topics.sh \
+            --bootstrap-server kafka:9094 \
+            --command-config /tmp/kafka-client.properties \
+            --create --if-not-exists \
+            --topic "$$topic" \
+            --partitions "$$KAFKA_TOPIC_PARTITIONS" \
+            --replication-factor 1
+        done
+    networks:
+      - lens-network
+    restart: 'no'
+
+  notification-mongodb:
+    image: '${MONGO_IMAGE:-mongo:6}'
+    pull_policy: '${MONGO_PULL_POLICY:-missing}'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in Portainer}'
+      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in Portainer}'
+      MONGO_INITDB_DATABASE: '${MONGO_DB_NAME:-noti_system_db}'
+    volumes:
+      - notification-mongo-data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet --username "$$MONGO_INITDB_ROOT_USERNAME"
+          --password "$$MONGO_INITDB_ROOT_PASSWORD"
+          --authenticationDatabase admin
+          --eval "db.adminCommand({ ping: 1 }).ok" | grep -q 1
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - lens-network
+    restart: unless-stopped
+
+volumes:
+  kafka-data:
+    name: lens-notification-kafka-data
+  notification-mongo-data:
+    name: lens-notification-mongo-data
+
+networks:
+  lens-network:
+    external: true
+    name: lens-network
+  lens-proxy:
+    external: true
+    name: lens-proxy
