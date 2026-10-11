@@ -7,8 +7,8 @@ import { sign } from 'jsonwebtoken';
 import request from 'supertest';
 import { SecurityModule } from '../src/common/security/security.module';
 import { configureApp } from '../src/setup';
-import { NotificationController } from '../src/modules/notification/notification/notification.controller';
-import { NotificationService } from '../src/modules/notification/notification/notification.service';
+import { NotificationController } from '../src/modules/notification/api/notification.controller';
+import { NotificationService } from '../src/modules/notification/core/notification.service';
 import { MailController } from '../src/modules/mail/mail/mail.controller';
 import { QueueService } from '../src/modules/mail/queue/queue.service';
 
