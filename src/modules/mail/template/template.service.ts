@@ -1,31 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { EmailTemplate } from '../entity/email_template.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { randomUUID } from 'node:crypto';
+import { EmailTemplate, EmailTemplateDocument } from '../entity/email_template.entity';
 import { TemplateTypeEnum } from '../mail/enum/template.enum';
 import mjml2html from 'mjml';
 import * as Handlebars from 'handlebars';
 import { EmailTemplateDto } from './dto/email_template.dto';
 import { TemplateVariableDto, Variable } from './dto/template_variable.dto';
-import { TemplateVariable } from '../entity/template_variable.entity';
 
 @Injectable()
 export class TemplateService {
   constructor(
-    @InjectRepository(EmailTemplate)
-    private readonly templateRepository: Repository<EmailTemplate>,
-    @InjectRepository(TemplateVariable)
-    private readonly templateVariablesRepository: Repository<TemplateVariable>,
+    @InjectModel(EmailTemplate.name)
+    private readonly templateModel: Model<EmailTemplateDocument>,
   ) {}
 
   /**
    * Get template by template type and version.
    */
   async getTemplate(template_type: TemplateTypeEnum, version: string) {
-    const template: EmailTemplate | null = await this.templateRepository.findOne({
-      where: { template_type: template_type, version: version, is_active: true },
-      select: ['id'],
-    });
+    const template = await this.templateModel
+      .findOne({ template_type, version, is_active: true })
+      .select({ id: 1 })
+      .lean()
+      .exec();
     return template;
   }
 
@@ -33,11 +32,11 @@ export class TemplateService {
    * Get template by template id.
    */
   async getTemplateById(template_id: string) {
-    const template: EmailTemplate | null = await this.templateRepository.findOne({
-      where: { id: template_id, is_active: true },
-      select: ['id', 'template_type', 'version', 'subject', 'body', 'engine'],
-      relations: ['template_variables'],
-    });
+    const template = await this.templateModel
+      .findOne({ id: template_id, is_active: true })
+      .select({ _id: 0, __v: 0 })
+      .lean()
+      .exec();
     return template;
   }
 
@@ -84,40 +83,56 @@ export class TemplateService {
   }
 
   /**
-   * Add template.
+   * Add a template and its embedded variables in one operation.
    */
   async addTemplate(template: EmailTemplateDto) {
-    const templateEntity = this.templateRepository.create(template);
-    return await this.templateRepository.save(templateEntity);
+    const templateVariables = (template.template_variables ?? []).map((variable: Variable) => ({
+      id: randomUUID(),
+      ...variable,
+      created_at: new Date(),
+    }));
+    const templateDocument = await this.templateModel.create({
+      ...template,
+      id: randomUUID(),
+      is_active: true,
+      template_variables: templateVariables,
+    });
+    return templateDocument.toObject();
   }
 
   /**
    * Add template variable.
    */
   async addTempalteVariable(templateVariable: TemplateVariableDto) {
-    const entities: TemplateVariable[] = [];
-    templateVariable.variables.forEach((variable: Variable) => {
-      const templateVariableEntity = this.templateVariablesRepository.create({
-        ...variable,
-        emailTemplate: {
-          id: templateVariable.emailTemplateId,
-        },
-      });
-      entities.push(templateVariableEntity);
-    });
-    return await this.templateVariablesRepository.save(entities);
+    const variables = templateVariable.variables.map((variable: Variable) => ({
+      id: randomUUID(),
+      ...variable,
+      created_at: new Date(),
+    }));
+    const updated = await this.templateModel
+      .findOneAndUpdate(
+        { id: templateVariable.emailTemplateId },
+        { $push: { template_variables: { $each: variables } } },
+        { returnDocument: 'after' },
+      )
+      .select({ _id: 0, template_variables: 1 })
+      .lean()
+      .exec();
+    if (!updated) throw new Error(`Email template not found: ${templateVariable.emailTemplateId}`);
+    return updated.template_variables ?? [];
   }
 
   /**
    * List templates.
    */
   async listTemplate(limit: number, offset: number) {
-    return await this.templateRepository.find({
-      take: limit,
-      skip: offset,
-      order: {
-        created_at: 'DESC',
-      },
-    });
+    return await this.templateModel
+      .find()
+      .sort({ created_at: -1 })
+      .skip(offset)
+      .limit(limit)
+      .select({ _id: 0, __v: 0 })
+      .lean()
+      .exec();
   }
 }

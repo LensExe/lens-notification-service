@@ -1,21 +1,30 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { MailJobName } from '../mail/enum/mail.enum';
 import { TemplateTypeEnum } from '../mail/enum/template.enum';
 
-@Entity('job_template')
+export type JobTemplateDocument = HydratedDocument<JobTemplate>;
+
+@Schema({
+  collection: 'job_templates',
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+})
 export class JobTemplate {
-  @PrimaryGeneratedColumn('uuid')
+  @Prop({ required: true, unique: true, index: true })
   id!: string;
 
-  @Column({ type: 'enum', enum: MailJobName, nullable: false })
+  @Prop({ type: String, required: true, enum: MailJobName })
   job_name!: MailJobName;
 
-  @Column({ type: 'enum', enum: TemplateTypeEnum, nullable: false })
+  @Prop({ type: String, required: true, enum: TemplateTypeEnum })
   template_type!: TemplateTypeEnum;
 
-  @Column({ type: 'varchar' })
+  @Prop({ required: true })
   version!: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date;
+
+  updated_at!: Date;
 }
+
+export const JobTemplateSchema = SchemaFactory.createForClass(JobTemplate);

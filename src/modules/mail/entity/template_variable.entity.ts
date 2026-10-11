@@ -1,20 +1,17 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { EmailTemplate } from './email_template.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Entity('template_variable')
+@Schema({ _id: false })
 export class TemplateVariable {
-  @PrimaryGeneratedColumn('uuid')
+  @Prop({ required: true })
   id!: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Prop({ required: true })
   variable_name!: string;
 
-  @Column({ type: 'boolean', default: false })
+  @Prop({ default: false })
   is_required!: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date;
-
-  @ManyToOne(() => EmailTemplate, (emailTemplate) => emailTemplate.id)
-  emailTemplate!: EmailTemplate;
 }
+
+export const TemplateVariableSchema = SchemaFactory.createForClass(TemplateVariable);

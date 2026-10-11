@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DataSource } from 'typeorm';
+import { randomUUID } from 'node:crypto';
+import mongoose from 'mongoose';
 import mjml2html from 'mjml';
-import { EmailTemplate } from '../modules/mail/entity/email_template.entity';
-import { JobTemplate } from '../modules/mail/entity/job_template.entity';
-import { TemplateVariable } from '../modules/mail/entity/template_variable.entity';
+import { EmailTemplate, EmailTemplateSchema } from '../modules/mail/entity/email_template.entity';
+import { JobTemplate, JobTemplateSchema } from '../modules/mail/entity/job_template.entity';
 import { MailJobName } from '../modules/mail/mail/enum/mail.enum';
 import { TemplateTypeEnum } from '../modules/mail/mail/enum/template.enum';
 
@@ -12,6 +12,12 @@ const TEMPLATE_VERSION = 'v1';
 const TEMPLATE_DIRECTORY = join(process.cwd(), 'src/modules/mail/template/mjml');
 
 const definitions = [
+  {
+    type: TemplateTypeEnum.OTP,
+    jobName: MailJobName.SEND_OTP,
+    filename: 'otp.mjml',
+    subject: 'Mã xác thực OTP của bạn',
+  },
   {
     type: TemplateTypeEnum.ORDER_CONFIRMATION,
     jobName: MailJobName.SEND_ORDER_CONFIRMATION,
@@ -52,83 +58,79 @@ function readVariables(subject: string, body: string): string[] {
 async function seedEmailTemplates(): Promise<void> {
   const envFile = join(process.cwd(), '.env');
   if (existsSync(envFile)) process.loadEnvFile(envFile);
-  const migrationFile = join(process.cwd(), 'sql/20261010_add_ecommerce_email_templates.sql');
-
-  const dataSource = new DataSource({
-    type: 'postgres',
-    host: requireEnvironment('DB_HOST'),
-    port: Number(process.env.DB_PORT ?? 5432),
-    database: requireEnvironment('DB_NAME'),
-    username: requireEnvironment('DB_USERNAME'),
-    password: requireEnvironment('DB_PASSWORD'),
-    entities: [EmailTemplate, TemplateVariable, JobTemplate],
-    synchronize: false,
+  const connection = await mongoose.connect(requireEnvironment('MONGO_URI'), {
+    dbName: requireEnvironment('MONGO_DB_NAME'),
   });
-
-  await dataSource.initialize();
+  const emailTemplateModel = connection.model(EmailTemplate.name, EmailTemplateSchema);
+  const jobTemplateModel = connection.model(JobTemplate.name, JobTemplateSchema);
   try {
-    await dataSource.query(readFileSync(migrationFile, 'utf8'));
     const seeded: Array<{ type: string; id: string; jobName: string }> = [];
-    await dataSource.transaction(async (manager) => {
-      for (const definition of definitions) {
-        const body = readFileSync(join(TEMPLATE_DIRECTORY, definition.filename), 'utf8');
-        const compiled = await mjml2html(body, { validationLevel: 'soft' });
-        if (compiled.errors.length > 0) {
-          throw new Error(
-            `${definition.filename} failed MJML validation:\n${compiled.errors.map((error) => error.formattedMessage).join('\n')}`,
-          );
-        }
-
-        const existing = await manager.findOneBy(EmailTemplate, {
-          template_type: definition.type,
-        });
-        const template = manager.create(EmailTemplate, {
-          ...(existing ?? {}),
-          template_type: definition.type,
-          version: TEMPLATE_VERSION,
-          subject: definition.subject,
-          body,
-          engine: 'mjml+handlebars',
-          is_active: true,
-        });
-        const savedTemplate = await manager.save(EmailTemplate, template);
-
-        const oldVariables = await manager.find(TemplateVariable, {
-          where: { emailTemplate: { id: savedTemplate.id } },
-        });
-        if (oldVariables.length > 0) await manager.remove(TemplateVariable, oldVariables);
-
-        const variables = readVariables(definition.subject, body).map((variable_name) =>
-          manager.create(TemplateVariable, {
-            variable_name,
-            is_required: true,
-            emailTemplate: savedTemplate,
-          }),
+    for (const definition of definitions) {
+      const body = readFileSync(join(TEMPLATE_DIRECTORY, definition.filename), 'utf8');
+      const compiled = await mjml2html(body, { validationLevel: 'soft' });
+      if (compiled.errors.length > 0) {
+        throw new Error(
+          `${definition.filename} failed MJML validation:\n${compiled.errors.map((error) => error.formattedMessage).join('\n')}`,
         );
-        if (variables.length > 0) await manager.save(TemplateVariable, variables);
+      }
 
-        const existingJobMapping = await manager.findOneBy(JobTemplate, {
-          job_name: definition.jobName,
-        });
-        if (!existingJobMapping) {
-          await manager.save(
-            JobTemplate,
-            manager.create(JobTemplate, {
-              job_name: definition.jobName,
+      const variables = readVariables(definition.subject, body).map((variable_name) => ({
+        id: randomUUID(),
+        variable_name,
+        is_required: true,
+        created_at: new Date(),
+      }));
+      const existing = await emailTemplateModel.findOne({ template_type: definition.type }).exec();
+      const savedTemplate = existing
+        ? await emailTemplateModel
+            .findOneAndUpdate(
+              { id: existing.id },
+              {
+                $set: {
+                  version: TEMPLATE_VERSION,
+                  subject: definition.subject,
+                  body,
+                  engine: 'mjml+handlebars',
+                  is_active: true,
+                  template_variables: variables,
+                },
+              },
+              { returnDocument: 'after' },
+            )
+            .exec()
+        : await emailTemplateModel.create({
+            id: randomUUID(),
+            template_type: definition.type,
+            version: TEMPLATE_VERSION,
+            subject: definition.subject,
+            body,
+            engine: 'mjml+handlebars',
+            is_active: true,
+            template_variables: variables,
+          });
+
+      await jobTemplateModel
+        .findOneAndUpdate(
+          { job_name: definition.jobName },
+          {
+            $set: {
               template_type: definition.type,
               version: TEMPLATE_VERSION,
-            }),
-          );
-        }
-        seeded.push({ type: definition.type, id: savedTemplate.id, jobName: definition.jobName });
-      }
-    });
+            },
+            $setOnInsert: { id: randomUUID() },
+          },
+          { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+        )
+        .exec();
+      if (!savedTemplate) throw new Error(`Could not seed ${definition.type}`);
+      seeded.push({ type: definition.type, id: savedTemplate.id, jobName: definition.jobName });
+    }
 
     for (const item of seeded) {
       console.log(`${item.type}: ${item.id} (${item.jobName})`);
     }
   } finally {
-    await dataSource.destroy();
+    await connection.disconnect();
   }
 }
 

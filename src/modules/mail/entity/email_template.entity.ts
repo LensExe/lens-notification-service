@@ -1,33 +1,42 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
 import { TemplateTypeEnum } from '../mail/enum/template.enum';
-import { TemplateVariable } from './template_variable.entity';
+import { TemplateVariable, TemplateVariableSchema } from './template_variable.entity';
 
-@Entity('email_template')
+export type EmailTemplateDocument = HydratedDocument<EmailTemplate>;
+
+@Schema({
+  collection: 'email_templates',
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+})
 export class EmailTemplate {
-  @PrimaryGeneratedColumn('uuid')
+  @Prop({ required: true, unique: true, index: true })
   id!: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Prop({ type: String, required: true, unique: true })
   template_type!: TemplateTypeEnum;
 
-  @Column({ type: 'varchar' })
+  @Prop({ required: true })
   version!: string;
 
-  @Column({ type: 'text' })
+  @Prop({ required: true })
   subject!: string;
 
-  @Column({ type: 'text' })
+  @Prop({ required: true })
   body!: string;
 
-  @Column({ type: 'varchar' })
+  @Prop({ required: true })
   engine!: string;
 
-  @Column({ type: 'boolean', default: true })
+  @Prop({ default: true, index: true })
   is_active?: boolean = true;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @Prop({ type: [TemplateVariableSchema], default: [] })
+  template_variables!: TemplateVariable[];
+
   created_at!: Date;
 
-  @OneToMany(() => TemplateVariable, (templateVariable) => templateVariable.emailTemplate)
-  template_variables!: TemplateVariable[];
+  updated_at!: Date;
 }
+
+export const EmailTemplateSchema = SchemaFactory.createForClass(EmailTemplate);

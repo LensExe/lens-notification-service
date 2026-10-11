@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BulkJobOptions, Job, Queue } from 'bullmq';
-import { EmailTemplate } from '../entity/email_template.entity';
+import { EmailTemplate, EmailTemplateDocument } from '../entity/email_template.entity';
 import { TemplateVariable } from '../entity/template_variable.entity';
 import { JobTemplateService } from '../job-template/job-template.service';
 import { MailJobName } from './enum/mail.enum';
@@ -95,10 +95,12 @@ describe('mail queue to provider flow', () => {
         .fn<Promise<SendEmailOutput>, [input: SendEmailInput]>()
         .mockResolvedValue({ provider: 'mock', statusCode: 202 }),
     };
-    const templateService = new TemplateService({} as never, {} as never);
+    const templateService = new TemplateService({} as never);
     jest
       .spyOn(templateService, 'getTemplateById')
-      .mockImplementation((id) => Promise.resolve(templates.get(id) ?? null));
+      .mockImplementation((id) =>
+        Promise.resolve((templates.get(id) as EmailTemplateDocument | undefined) ?? null),
+      );
     const mailService = new MailService(provider, templateService);
     const singleQueue = {
       add: jest

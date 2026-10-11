@@ -1,12 +1,12 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { EmailTemplate } from '../entity/email_template.entity';
+import { EmailTemplate, EmailTemplateDocument } from '../entity/email_template.entity';
 import { MailService } from '../mail/mail.service';
 import { SendEmailInput, SendEmailOutput } from '../providers/mail-provider.interface';
 import { TemplateService } from './template.service';
 
 describe('MJML email templates', () => {
-  const templateService = new TemplateService({} as never, {} as never);
+  const templateService = new TemplateService({} as never);
   const templateDirectory = join(__dirname, 'mjml');
 
   it.each(readdirSync(templateDirectory).filter((filename) => filename.endsWith('.mjml')))(
@@ -30,8 +30,10 @@ describe('MJML email templates', () => {
         .fn<Promise<SendEmailOutput>, [input: SendEmailInput]>()
         .mockResolvedValue({ provider: 'mock', statusCode: 202 }),
     };
-    const templateService = new TemplateService({} as never, {} as never);
-    jest.spyOn(templateService, 'getTemplateById').mockResolvedValue(template);
+    const templateService = new TemplateService({} as never);
+    jest
+      .spyOn(templateService, 'getTemplateById')
+      .mockResolvedValue(template as EmailTemplateDocument);
     const mailService = new MailService(provider, templateService);
 
     await mailService.sendEmail({

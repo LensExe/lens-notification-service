@@ -1,7 +1,8 @@
-import { Repository } from 'typeorm';
-import { JobTemplate } from '../entity/job_template.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { randomUUID } from 'node:crypto';
+import { JobTemplate, JobTemplateDocument } from '../entity/job_template.entity';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { fromMailJobNameEnum } from '../mail/enum/mail.enum';
 import { TemplateService } from '../template/template.service';
@@ -12,24 +13,22 @@ export class JobTemplateService {
   private readonly logger = new Logger(JobTemplateService.name);
 
   constructor(
-    @InjectRepository(JobTemplate)
-    private readonly jobTemplateRepository: Repository<JobTemplate>,
+    @InjectModel(JobTemplate.name)
+    private readonly jobTemplateModel: Model<JobTemplateDocument>,
     @Inject(CACHE_MANAGER)
     private cacheManager: Cache,
     private readonly templateService: TemplateService,
   ) {}
 
   async listJobTemplates(): Promise<JobTemplate[]> {
-    return await this.jobTemplateRepository.find({
-      order: { created_at: 'DESC' },
-    });
+    return await this.jobTemplateModel.find().sort({ created_at: -1 }).lean().exec();
   }
 
   async getJobTemplateRecords(): Promise<Record<string, string>> {
     const cacheKey = `job_template_records`;
     const jobTemplateRecords: Record<string, string> | null = await this.cacheManager.get(cacheKey);
     if (jobTemplateRecords) return jobTemplateRecords;
-    const jobTemplates: JobTemplate[] = await this.jobTemplateRepository.find();
+    const jobTemplates = await this.jobTemplateModel.find().lean().exec();
     const newRecords: Record<string, string> = {};
     for (const jobTemplate of jobTemplates) {
       const { job_name, template_type, version } = jobTemplate;
@@ -58,9 +57,8 @@ export class JobTemplateService {
   }
 
   async createJobTemplate(input: CreateJobTemplateDto): Promise<JobTemplate> {
-    const jobTemplate = this.jobTemplateRepository.create(input);
-    const saved = await this.jobTemplateRepository.save(jobTemplate);
+    const saved = await this.jobTemplateModel.create({ ...input, id: randomUUID() });
     await this.cacheManager.del('job_template_records');
-    return saved;
+    return saved.toObject();
   }
 }

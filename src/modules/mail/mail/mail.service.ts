@@ -29,7 +29,7 @@ export class MailService {
     }
 
     const templateVariables: Record<string, string> = {};
-    for (const variable of template.template_variables) {
+    for (const variable of template.template_variables ?? []) {
       if (
         variable.is_required &&
         (variables?.[variable.variable_name] === '' ||
