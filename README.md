@@ -8,7 +8,7 @@ Một microservice NestJS chuẩn, chạy một process và một port, đứng 
 src/
   main.ts
   setup.ts                         # Global prefix + validation
-  app.module.ts                    # Hạ tầng PostgreSQL/BullMQ, hai context
+  app.module.ts                    # Hạ tầng MongoDB/BullMQ, hai context
   common/security/
     security.module.ts             # APP_GUARD dùng chung
     keycloak-jwt.guard.ts
@@ -27,9 +27,12 @@ src/
       queue/
     notification/
       notification-context.module.ts
-      notification/                # HTTP, WebSocket, Kafka consumer, worker, Mongo read model
-      entity/                      # Repository chỉ thuộc notification
-      queue/
+      notification.module.ts       # Ghép các subdomain notification
+      core/                         # Entity, DTO, enum và nghiệp vụ notification
+      api/                          # HTTP controller
+      events/                       # Kafka consumers và DLQ relay
+      realtime/                     # Socket.IO gateway và telemetry
+      jobs/                         # BullMQ processor và queue
 test/
   jest-e2e.json
   service.e2e-spec.ts
@@ -41,19 +44,37 @@ tsconfig.build.json
 ../lens-backend/.docker/notification-system/ # Cấu hình Compose hạ tầng
 ```
 
-Hai context không import lẫn nhau và không export repository. PostgreSQL connection và BullMQ connection là hạ tầng dùng chung; mỗi context đăng ký entity/repository riêng qua forFeature. Mail chỉ xử lý email/template. Notification chỉ xử lý in-app và realtime. Không có gateway HTTP, user management, login, refresh token hoặc proxy nội bộ.
+Hai context không import lẫn nhau. MongoDB connection và BullMQ connection là hạ tầng dùng chung; mỗi context đăng ký schema riêng qua `forFeature`. Mail chỉ xử lý email/template. Notification chỉ xử lý in-app và realtime. Không có gateway HTTP, user management, login, refresh token hoặc proxy nội bộ.
 
 ## Chạy
 
-Yêu cầu Node.js 22.13+, pnpm 11.15.1, PostgreSQL, MongoDB, Redis và thông tin provider email. Phiên bản pnpm được cố định trong trường packageManager của package.json.
+Yêu cầu Node.js 22.13+, pnpm 11.15.1, MongoDB, Redis và thông tin provider email. Phiên bản pnpm được cố định trong trường packageManager của package.json.
 
 1. Chạy `pnpm install --frozen-lockfile` (dùng cùng lệnh này trong CI).
 2. Tạo `.env` từ `.env.example`, điền public key Keycloak và cấu hình hạ tầng/provider.
-3. Với database local mới, có thể bật `DB_SYNCHRONIZE=true`. Mặc định false; môi trường production cần chuẩn bị schema bằng quy trình migration hiện có trước khi chạy.
+3. MongoDB tự tạo database/collection khi service ghi document đầu tiên; production nên tạo index và phân quyền bằng quy trình triển khai riêng.
 4. Chạy `pnpm start:dev` hoặc `pnpm build && pnpm start:prod`.
 
 Service mặc định nghe port 3001. Tất cả HTTP endpoint bắt đầu bằng `/api/v1`.
 Trước khi chuyển Notification khỏi Redis riêng sang Redis chung của Lens, hãy drain queue cũ hoặc chủ động chuyển job; dữ liệu job không tự chuyển sang Redis Lens DB 1. Giữ volume Redis cũ cho tới khi xác nhận không còn cần dữ liệu. Không chạy đồng thời worker cũ và mới trên cùng queue khi chuyển đổi.
+
+### Build Docker image
+
+```sh
+docker build -t lens-notification:local .
+docker run --rm --name lens-notification \
+  --env-file .env \
+  --network lens-network \
+  -p 3001:3001 \
+  lens-notification:local
+```
+
+Khi chạy trong container, các biến `MONGO_URI`, `KAFKA_BROKERS` và `REDIS_HOST` phải dùng DNS/container name trong `lens-network`, không dùng `localhost`. Không copy `.env` vào image; truyền cấu hình lúc chạy container.
+
+### Deploy bằng Portainer
+
+Stack production nằm tại `deploy/portainer/notification-stack.yml`; hướng dẫn
+biến môi trường và thứ tự triển khai nằm trong `deploy/portainer/README.md`.
 
 ## API
 
@@ -65,8 +86,8 @@ Tất cả endpoint yêu cầu `Authorization: Bearer <Keycloak access token>`. 
 | POST   | /api/v1/mail/:jobName/single          | Xếp hàng một email, trả 202                  |
 | POST   | /api/v1/mail/:jobName/bulk            | Xếp hàng nhiều email, trả 202                |
 | GET    | /api/v1/mail/templates                | Danh sách template                           |
-| POST   | /api/v1/mail/templates                | Tạo template                                 |
-| POST   | /api/v1/mail/templates/variable       | Thêm biến template                           |
+| POST   | /api/v1/mail/templates                | Tạo template kèm `template_variables`       |
+| POST   | /api/v1/mail/templates/variable       | Thêm biến vào template đã tồn tại           |
 | GET    | /api/v1/mail/job-templates            | Danh sách mapping                            |
 | POST   | /api/v1/mail/job-templates            | Tạo mapping                                  |
 | GET    | /api/v1/mail/job-templates/records    | Đọc mapping đã resolve                       |
@@ -104,14 +125,14 @@ Các endpoint đọc/mark-read không nhận userId để chọn tài khoản kh
 
 ## Nhận notification event từ Kafka
 
-Notification service có thể consume event từ topic `notification.events`. Consumer xác thực cấu trúc message rồi đưa notification vào BullMQ; worker lưu notification vào PostgreSQL/MongoDB và phát Socket.IO event `notification` đến room của user. Consumer mặc định tắt để service hiện tại vẫn chạy khi Kafka chưa được cấu hình.
+Notification service có thể consume event từ topic `notification.events`. Consumer xác thực cấu trúc message rồi đưa notification vào BullMQ; worker lưu notification vào MongoDB và phát Socket.IO event `notification` đến room của user. Consumer mặc định tắt để service hiện tại vẫn chạy khi Kafka chưa được cấu hình.
 
 Hướng dẫn chi tiết cho service phát event: [Gửi notification event lên Kafka](md/notification_kafka_producer_guide.md).
 
-Kafka local cùng MongoDB và PostgreSQL được quản lý trong `../lens-backend/.docker/notification-system/compose.yaml`. Redis được dùng chung với Lens Backend. Khởi động Lens Redis bằng `pnpm docker:up` từ thư mục `lens-backend` trước, sau đó khởi động broker và Kafka UI:
+Kafka và MongoDB local được quản lý trong `.docker/compose.yaml`. Redis được dùng chung với Lens Backend. Khởi động Lens Redis bằng `pnpm docker:up` từ thư mục `lens-backend` trước, sau đó khởi động broker và Kafka UI:
 
 ```sh
-docker compose -f ../lens-backend/.docker/notification-system/compose.yaml up -d --remove-orphans kafka kafka-ui
+docker compose -f .docker/compose.yaml up -d --remove-orphans kafka kafka-ui notification-mongodb
 ```
 
 Trong Kafka UI tại `http://localhost:8080`, tạo các topic `notification.events`, `notification.events.dlq`, `notification.mail.commands.v1`, `notification.mail.commands.v1.dlq`, `chat.conversation.events.v1` và `chat.conversation.events.v1.dlq` với 1 partition, replication factor 1 cho môi trường local. Broker đang tắt auto-create topic.
@@ -139,7 +160,7 @@ REDIS_DB=1
 REDIS_PASSWORD=your-local-redis-password
 ```
 
-Nếu notification service chạy trong container cùng `lens-network`, dùng `KAFKA_BROKERS=kafka:9094` (PLAINTEXT) và bỏ `KAFKA_USERNAME`/`KAFKA_PASSWORD`. Nếu chạy trong một Docker network khác, dùng listener Docker `host.docker.internal:19092` cùng SASL credentials như trên. Với các dependency trong `lens-network`, dùng `DB_HOST=notification-postgres` và port `5432`, `MONGO_URI=mongodb://noti_system_db_user:noti_system_db_password@notification-mongodb:27017/?authSource=admin`, cùng `REDIS_HOST=lens-redis`, `REDIS_PORT=6379`, `REDIS_DB=1` và `REDIS_PASSWORD` giống Lens. Khi service chạy trên host, dùng `REDIS_HOST=localhost` và `REDIS_PORT=6380` với cùng mật khẩu. Trong production, cấu hình broker, SASL credentials và TLS theo môi trường triển khai; không dùng credential local trong production.
+Nếu notification service chạy trong container cùng `lens-network`, dùng `MONGO_URI=mongodb://noti_system_db_user:noti_system_db_password@notification-mongodb:27017/?authSource=admin` và `MONGO_DB_NAME=noti_system_db`. Nếu chạy trên host, đổi host trong URI thành `localhost`. Redis được cấu hình với `REDIS_HOST=lens-redis`, `REDIS_PORT=6379`, `REDIS_DB=1` khi chạy trong network hoặc `REDIS_HOST=localhost`, `REDIS_PORT=6380` khi chạy trên host. Trong production, cấu hình broker, SASL credentials, MongoDB và TLS theo môi trường triển khai; không dùng credential local trong production.
 
 Với group ID mới, `KAFKA_FROM_BEGINNING=false` bắt đầu đọc event mới tại thời điểm consumer khởi động. Hãy bật consumer trước khi producer gửi event; đặt biến này thành `true` cùng group ID mới nếu cần replay event còn lưu trên topic.
 
@@ -314,6 +335,6 @@ E2E kiểm tra HTTP routing/auth/validation với adapter nghiệp vụ được
 
 ## Giới hạn kế thừa và các tính năng tiếp theo
 
-Notification vẫn ghi PostgreSQL rồi MongoDB như hệ thống cũ; refactor này chưa biến dual-write thành transaction phân tán. Nên ưu tiên Outbox hoặc gom read/write vào PostgreSQL để tránh lệch dữ liệu khi MongoDB lỗi. Retry mail có thể gửi trùng nếu provider nhận thư nhưng worker chưa ghi nhận thành công.
+Notification và email-template hiện dùng MongoDB làm datastore duy nhất. Việc này loại bỏ dual-write giữa PostgreSQL và MongoDB; MongoDB vẫn cần backup và index phù hợp trong production. Retry mail có thể gửi trùng nếu provider nhận thư nhưng worker chưa ghi nhận thành công.
 
 Các ưu tiên tiếp theo: idempotency bền vững ngoài vòng đời BullMQ, delivery log và webhook trạng thái provider, DLQ có retry thủ công, preferences/quiet hours, scheduled delivery, push notification. Các tính năng này chưa được triển khai trong đợt gộp cấu trúc.

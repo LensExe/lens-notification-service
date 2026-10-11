@@ -11,7 +11,7 @@ Order/Payment Service
 Kafka: notification.events
         │ consume
         ▼
-notification-service → BullMQ → PostgreSQL/MongoDB → Socket.IO → user
+notification-service → BullMQ → MongoDB → Socket.IO → user
 ```
 
 Producer phải gửi payload notification đã có `userId`, `title`, `message` và `type`. Consumer hiện không nhận event nghiệp vụ thô rồi tự render template.
@@ -166,4 +166,4 @@ Gửi một event trong khi notification-service đang chạy. Log consumer sẽ
 
 ## 6. Hạn chế giao nhận
 
-Kafka và BullMQ hiện dùng at-least-once delivery. `eventId` giúp chống enqueue trùng trong lúc BullMQ còn lưu job tương ứng, nhưng đây chưa phải bảo đảm exactly-once vĩnh viễn. PostgreSQL và MongoDB cũng là hai lần ghi riêng trong luồng notification hiện tại.
+Kafka và BullMQ hiện dùng at-least-once delivery. `eventId` giúp chống enqueue trùng trong lúc BullMQ còn lưu job tương ứng, nhưng đây chưa phải bảo đảm exactly-once vĩnh viễn. Notification hiện dùng một lần ghi vào MongoDB.

@@ -10,11 +10,11 @@ Phạm vi hiện tại: Chat Service phát create/edit/recall/read-cursor qua tr
 
 ## Luồng Notification Service hiện có
 
-Consumer hiện tại đọc `notification.events`, kiểm tra contract gồm `eventId`, `eventType`, `priority` và `notification.userId/title/message/type/data`, rồi enqueue vào BullMQ. Worker gọi `NotificationService.notifyUser`, lưu notification vào PostgreSQL và MongoDB, sau đó Gateway emit Socket.IO event `notification` vào room của user.
+Consumer hiện tại đọc `notification.events`, kiểm tra contract gồm `eventId`, `eventType`, `priority` và `notification.userId/title/message/type/data`, rồi enqueue vào BullMQ. Worker gọi `NotificationService.notifyUser`, lưu notification vào MongoDB, sau đó Gateway emit Socket.IO event `notification` vào room của user.
 
 Luồng đó phù hợp với notification cần xuất hiện trong danh sách `/api/v1/notifications`, kể cả khi user offline. Consumer hiện chỉ chấp nhận các notification type đang có như `welcome`, `order_placed`, `payment_success` và `promotion_started`.
 
-Vì vậy, không đưa raw `chat.message.created.v1` vào consumer/topic `notification.events` theo contract hiện tại. Nếu đi qua `notifyUser`, event chat sẽ được lưu khi offline; đồng thời cần thêm notification type và migration cho enum PostgreSQL. Đó là một lựa chọn khác với yêu cầu realtime-only.
+Vì vậy, không đưa raw `chat.message.created.v1` vào consumer/topic `notification.events` theo contract hiện tại. Nếu đi qua `notifyUser`, event chat sẽ được lưu khi offline; đồng thời cần thêm notification type và cập nhật `NotificationTypeEnum`. Đó là một lựa chọn khác với yêu cầu realtime-only.
 
 ## Luồng consumer chat đề xuất
 
@@ -150,4 +150,4 @@ Push consumer mới không nên dùng chung Kafka group ID với `ChatEventsCons
 
 ## Lựa chọn khác: notification inbox bền vững
 
-Nếu sau này muốn message mới cũng xuất hiện trong danh sách notification của Notification Service khi user offline, có thể chuyển event thành notification DTO và dùng lại `notification.events` → BullMQ → `notifyUser`. Khi đó cần thêm `chat_message` vào `NotificationTypeEnum`, migration enum PostgreSQL, quy tắc lưu preview/data và idempotency bền vững. Đây là chế độ lưu in-app notification; nó không còn là “offline thì bỏ qua”.
+Nếu sau này muốn message mới cũng xuất hiện trong danh sách notification của Notification Service khi user offline, có thể chuyển event thành notification DTO và dùng lại `notification.events` → BullMQ → `notifyUser`. Khi đó cần thêm `chat_message` vào `NotificationTypeEnum`, quy tắc lưu preview/data và idempotency bền vững. Đây là chế độ lưu in-app notification; nó không còn là “offline thì bỏ qua”.
