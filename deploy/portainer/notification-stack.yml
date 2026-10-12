@@ -1,7 +1,6 @@
-name: lens-notification
-
 services:
-  notification:
+  lens-notification:
+    container_name: lens-notification
     image: '${NOTIFICATION_IMAGE:-ghcr.io/${IMAGE_OWNER:-lensexe}/lens-notification:${IMAGE_TAG:-latest}}'
     pull_policy: '${NOTIFICATION_PULL_POLICY:-always}'
     environment:
