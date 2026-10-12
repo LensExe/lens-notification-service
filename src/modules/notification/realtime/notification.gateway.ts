@@ -26,7 +26,7 @@ export class NotificationGateway
   afterInit(server: Namespace): void {
     server.use((socket, next) => {
       try {
-        const token = socket.handshake.auth?.token;
+        const token: unknown = socket.handshake.auth?.token;
         if (typeof token !== 'string' || !token.trim()) {
           throw new Error('Socket.IO auth token required');
         }
