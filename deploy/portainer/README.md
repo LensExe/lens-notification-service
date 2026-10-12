@@ -1,19 +1,18 @@
 # Portainer notification stack
 
-Stack này deploy image `lens-notification`, Kafka và MongoDB. Redis không được
-nhân bản trong stack; service dùng Redis chung `lens-redis` của
-`lens-infra` trên mạng `lens-network`.
+Stack này deploy image `lens-notification` và MongoDB. Kafka không nằm trong
+stack này; service dùng Kafka dùng chung từ `lens-kafka` trên mạng
+`lens-network`. Redis cũng dùng chung `lens-redis` của `lens-infra`.
 
 ## Chuẩn bị
 
-Tạo hai external network một lần trên Docker host nếu chưa có:
+Tạo external network một lần trên Docker host nếu chưa có:
 
 ```sh
 docker network create lens-network
-docker network create lens-proxy
 ```
 
-Deploy `lens-infra` trước để có `lens-redis`. Sau đó trong Portainer chọn
+Deploy `lens-infra` và `lens-kafka` trước. Sau đó trong Portainer chọn
 **Stacks → Add stack → Git repository**, dùng đường dẫn Compose:
 `deploy/portainer/notification-stack.yml`.
 
@@ -43,7 +42,6 @@ giá trị thật vào Git:
 
 ```dotenv
 KAFKA_PASSWORD=change-me
-KAFKA_CONTROLLER_PASSWORD=change-me
 MONGO_ROOT_USERNAME=noti_system_db_user
 MONGO_ROOT_PASSWORD=change-me
 MONGO_URI=mongodb://noti_system_db_user:change-me@notification-mongodb:27017/?authSource=admin
@@ -62,10 +60,10 @@ là `lens-redis`, và `KAFKA_BROKERS` mặc định là `kafka:9094`. Không dù
 `localhost` bên trong container. Nếu mật khẩu Mongo có ký tự đặc biệt, URL
 encode mật khẩu trong `MONGO_URI`.
 
-`kafka-init` tự tạo sáu topic notification/chat và chạy một lần sau khi Kafka
-sẵn sàng. Các service phát event khác trong `lens-network` phải dùng
-`kafka:9094` cùng `KAFKA_USERNAME`/`KAFKA_PASSWORD`.
+`lens-kafka` tự tạo sáu topic notification/chat. Notification chỉ kết nối tới
+Kafka qua `kafka:9094` với `KAFKA_USERNAME`/`KAFKA_PASSWORD`; không khởi tạo một
+broker Kafka riêng trong stack này.
 
-Port `3001` chỉ bind vào loopback host. Kong/Caddy truy cập service qua Docker
-DNS `notification:3001` trên `lens-network`/`lens-proxy`; đổi
-`NOTIFICATION_HOST_PORT` nếu cần debug trực tiếp trên host.
+Notification không publish port ra host. Kong truy cập service qua Docker DNS
+`notification:3001` trên mạng riêng `lens-network`; không gọi trực tiếp port
+`3001` từ Internet.
