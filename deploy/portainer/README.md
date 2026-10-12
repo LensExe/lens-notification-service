@@ -1,8 +1,8 @@
 # Portainer notification stack
 
-Stack này deploy image `lens-notification` và MongoDB. Kafka không nằm trong
-stack này; service dùng Kafka dùng chung từ `lens-kafka` trên mạng
-`lens-network`. Redis cũng dùng chung `lens-redis` của `lens-infra`.
+Stack này chỉ deploy image `lens-notification`. MongoDB dùng chung từ
+`lens-infra`, Kafka dùng chung từ `lens-kafka`, và Redis dùng chung từ
+`lens-infra` trên mạng `lens-network`.
 
 ## Chuẩn bị
 
@@ -12,7 +12,9 @@ Tạo external network một lần trên Docker host nếu chưa có:
 docker network create lens-network
 ```
 
-Deploy `lens-infra` và `lens-kafka` trước. Sau đó trong Portainer chọn
+Deploy `lens-infra` trước và chờ `lens-mongodb-init` hoàn tất để tạo database,
+user cho Notification và Chat. Deploy `lens-kafka` tiếp theo, rồi trong
+Portainer chọn
 **Stacks → Add stack → Git repository**, dùng đường dẫn Compose:
 `deploy/portainer/notification-stack.yml`.
 
@@ -42,9 +44,8 @@ giá trị thật vào Git:
 
 ```dotenv
 KAFKA_PASSWORD=change-me
-MONGO_ROOT_USERNAME=noti_system_db_user
-MONGO_ROOT_PASSWORD=change-me
-MONGO_URI=mongodb://noti_system_db_user:change-me@notification-mongodb:27017/?authSource=admin
+MONGO_URI=mongodb://lens-notification:change-me@notification-mongodb:27017/?authSource=noti_system_db
+MONGO_DB_NAME=noti_system_db
 REDIS_PASSWORD=the-password-used-by-lens-redis
 KEYCLOAK_ISSUER=https://auth.example.com/realms/lens
 KEYCLOAK_AUDIENCE=notification-service
@@ -55,10 +56,12 @@ MAILGUN_DOMAIN=example.com
 MAILGUN_FROM_EMAIL=noreply@example.com
 ```
 
-`MONGO_URI` phải dùng hostname `notification-mongodb`, `REDIS_HOST` mặc định
-là `lens-redis`, và `KAFKA_BROKERS` mặc định là `kafka:9094`. Không dùng
-`localhost` bên trong container. Nếu mật khẩu Mongo có ký tự đặc biệt, URL
-encode mật khẩu trong `MONGO_URI`.
+`MONGO_URI` dùng alias `notification-mongodb` của Mongo chung trong
+`lens-infra`; alias này trỏ tới service `lens-mongodb` và chỉ có quyền trên
+database `noti_system_db`. `REDIS_HOST` mặc định là `lens-redis`, còn
+`KAFKA_BROKERS` mặc định là `kafka:9094`. Không dùng `localhost` bên trong
+container. Nếu mật khẩu Mongo có ký tự đặc biệt, URL-encode mật khẩu trong
+`MONGO_URI`.
 
 `lens-kafka` tự tạo sáu topic notification/chat. Notification chỉ kết nối tới
 Kafka qua `kafka:9094` với `KAFKA_USERNAME`/`KAFKA_PASSWORD`; không khởi tạo một
@@ -66,4 +69,4 @@ broker Kafka riêng trong stack này.
 
 Notification không publish port ra host. Kong truy cập service qua Docker DNS
 `notification:3001` trên mạng riêng `lens-network`; không gọi trực tiếp port
-`3001` từ Internet.
+`3001` từ Internet. Stack này không còn service Mongo hoặc volume Mongo riêng.

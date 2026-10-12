@@ -46,40 +46,9 @@ services:
       SENDGRID_API_KEY: '${SENDGRID_API_KEY:-}'
       SENDGRID_FROM_EMAIL: '${SENDGRID_FROM_EMAIL:-}'
       SENDGRID_FROM_NAME: '${SENDGRID_FROM_NAME:-Notification System}'
-    depends_on:
-      notification-mongodb:
-        condition: service_healthy
     networks:
       - lens-network
     restart: unless-stopped
-
-  notification-mongodb:
-    image: '${MONGO_IMAGE:-mongo:6}'
-    pull_policy: '${MONGO_PULL_POLICY:-missing}'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: '${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in Portainer}'
-      MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in Portainer}'
-      MONGO_INITDB_DATABASE: '${MONGO_DB_NAME:-noti_system_db}'
-    volumes:
-      - notification-mongo-data:/data/db
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          mongosh --quiet --username "$$MONGO_INITDB_ROOT_USERNAME"
-          --password "$$MONGO_INITDB_ROOT_PASSWORD"
-          --authenticationDatabase admin
-          --eval "db.adminCommand({ ping: 1 }).ok" | grep -q 1
-      interval: 5s
-      timeout: 5s
-      retries: 12
-    networks:
-      - lens-network
-    restart: unless-stopped
-
-volumes:
-  notification-mongo-data:
-    name: lens-notification-mongo-data
 
 networks:
   lens-network:
