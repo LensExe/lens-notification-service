@@ -9,6 +9,7 @@ import { QueueModule } from './jobs/queue/queue.module';
 import { NotificationEventsConsumer } from './events/notification-events.consumer';
 import { ChatEventsConsumer } from './events/chat-events.consumer';
 import { RealtimeMetricsController, RealtimeTelemetry } from './realtime/realtime-telemetry';
+import { PresenceStore } from './realtime/presence.store';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RealtimeMetricsController, RealtimeTelemetry } from './realtime/realtim
     NotificationEventsConsumer,
     ChatEventsConsumer,
     RealtimeTelemetry,
+    PresenceStore,
   ],
   exports: [NotificationService, NotificationGateway, NotificationProcessor],
 })

@@ -5,9 +5,10 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { OnModuleDestroy } from '@nestjs/common';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { Namespace, Socket } from 'socket.io';
 import { KeycloakJwtVerifier } from '../../../common/security/keycloak-jwt.verifier';
+import { PresenceStore } from './presence.store';
 
 @WebSocketGateway({
   namespace: '/notification',
@@ -17,11 +18,16 @@ import { KeycloakJwtVerifier } from '../../../common/security/keycloak-jwt.verif
 export class NotificationGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleDestroy
 {
+  private readonly logger = new Logger(NotificationGateway.name);
   @WebSocketServer()
   server!: Namespace;
   private readonly expiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly presenceTimers = new Map<string, ReturnType<typeof setInterval>>();
 
-  constructor(private readonly verifier: KeycloakJwtVerifier) {}
+  constructor(
+    private readonly verifier: KeycloakJwtVerifier,
+    private readonly presence: PresenceStore,
+  ) {}
 
   afterInit(server: Namespace): void {
     server.use((socket, next) => {
@@ -45,6 +51,18 @@ export class NotificationGateway
       expiresAt: number;
     };
     await client.join(`user:${userId}`);
+    try {
+      await this.presence.connect(userId, client.id);
+    } catch (error) {
+      this.logger.warn(
+        `Could not register socket presence for ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    const presenceTimer = setInterval(() => {
+      void this.presence.refresh(userId, client.id).catch(() => undefined);
+    }, 20_000);
+    presenceTimer.unref();
+    this.presenceTimers.set(client.id, presenceTimer);
     // Periodic check also handles tokens whose lifetime exceeds setTimeout's maximum.
     const timer = setInterval(() => {
       if (Date.now() >= expiresAt * 1000) client.disconnect(true);
@@ -57,6 +75,11 @@ export class NotificationGateway
     const timer = this.expiryTimers.get(client.id);
     if (timer) clearInterval(timer);
     this.expiryTimers.delete(client.id);
+    const presenceTimer = this.presenceTimers.get(client.id);
+    if (presenceTimer) clearInterval(presenceTimer);
+    this.presenceTimers.delete(client.id);
+    const { userId } = client.data as { userId?: string };
+    if (userId) void this.presence.disconnect(userId, client.id).catch(() => undefined);
   }
 
   sendNotification(userId: string, payload: unknown): void {
@@ -70,5 +93,7 @@ export class NotificationGateway
   onModuleDestroy(): void {
     for (const timer of this.expiryTimers.values()) clearInterval(timer);
     this.expiryTimers.clear();
+    for (const timer of this.presenceTimers.values()) clearInterval(timer);
+    this.presenceTimers.clear();
   }
 }
