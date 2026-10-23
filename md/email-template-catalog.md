@@ -1,15 +1,18 @@
-# Email templates cho luồng thương mại điện tử
+# Email templates cho các luồng email của user
 
-Các template MJML nằm trong `src/modules/mail/template/mjml`. Bộ mới gồm xác nhận đơn hàng, biên nhận thanh toán, cập nhật giao hàng và chiến dịch ưu đãi. Mỗi loại có `jobName` riêng để queue giao dịch và queue bulk không phải đoán template mặc định.
+Các template MJML nằm trong `src/modules/mail/template/mjml`. Mỗi template được seed vào MongoDB cùng một `jobName` riêng, vì vậy queue có thể tự resolve đúng template mặc định khi API không truyền `template_id`.
 
 | Nghiệp vụ            | `template_type`      | `jobName`                       |
 | -------------------- | -------------------- | ------------------------------- |
+| OTP xác thực         | `otp`                | `send-otp-email`                |
+| Chào mừng tài khoản  | `welcome`            | `send-welcome-email`            |
+| Đặt lại mật khẩu     | `reset_password`     | `send-password-reset-email`     |
 | Xác nhận đơn hàng    | `order_confirmation` | `send-order-confirmation-email` |
 | Biên nhận thanh toán | `payment_receipt`    | `send-payment-receipt-email`    |
 | Cập nhật vận chuyển  | `shipping_update`    | `send-shipping-update-email`    |
 | Gửi ưu đãi hàng loạt | `promotion_campaign` | `send-promotion-email`          |
 
-Template OTP, chào mừng và đặt lại mật khẩu vẫn giữ nguyên. Subject hỗ trợ biến Handlebars như nội dung email.
+`send-transactional-email` vẫn được giữ cho các template tùy biến truyền bằng `template_id`; các template có sẵn đều dùng mapping riêng ở trên. Subject hỗ trợ biến Handlebars như nội dung email.
 
 ## Cài template vào database
 
@@ -20,11 +23,17 @@ pnpm build
 pnpm seed:email-templates
 ```
 
-Seeder đọc cấu hình `DB_*` từ môi trường hoặc `.env`, áp dụng migration enum an toàn khi chạy lặp lại, kiểm tra cú pháp MJML, rồi tạo/cập nhật template và danh sách biến bắt buộc. Seeder không gửi email. Các mapping job-template hiện có được giữ nguyên; mapping mới được thêm khi chưa tồn tại. Khởi động lại notification-service sau khi seed để xóa cache mapping job-template đang nằm trong bộ nhớ.
+Seeder đọc `MONGO_URI` và `MONGO_DB_NAME` từ môi trường hoặc `.env`, kiểm tra cú pháp MJML, rồi tạo/cập nhật template và danh sách biến bắt buộc. Seeder không gửi email. Các mapping job-template hiện có được giữ nguyên; mapping mới được thêm khi chưa tồn tại. Khởi động lại notification-service sau khi seed để xóa cache mapping job-template đang nằm trong bộ nhớ.
 
 ## Gửi một email
 
 Các biến trong danh sách của mỗi template đều bắt buộc. Giá trị gửi qua API phải là chuỗi.
+
+**OTP** (`otp.mjml`): `appName`, `userName`, `otpCode`, `expiresInMinutes`, `year`.
+
+**Chào mừng** (`welcome.mjml`): `appName`, `userName`, `loginUrl`, `supportEmail`, `year`.
+
+**Đặt lại mật khẩu** (`password-reset.mjml`): `appName`, `userName`, `resetUrl`, `expiresInMinutes`, `supportEmail`, `year`.
 
 **Xác nhận đơn hàng** (`order-confirmation.mjml`): `appName`, `customerName`, `orderNumber`, `orderDate`, `subtotal`, `shippingFee`, `totalAmount`, `currency`, `orderUrl`, `supportEmail`, `year`.
 

@@ -19,6 +19,18 @@ const definitions = [
     subject: 'Mã xác thực OTP của bạn',
   },
   {
+    type: TemplateTypeEnum.WELCOME,
+    jobName: MailJobName.SEND_WELCOME,
+    filename: 'welcome.mjml',
+    subject: 'Chào mừng bạn đến với {{appName}}!',
+  },
+  {
+    type: TemplateTypeEnum.RESET_PASSWORD,
+    jobName: MailJobName.SEND_PASSWORD_RESET,
+    filename: 'password-reset.mjml',
+    subject: 'Đặt lại mật khẩu tài khoản {{appName}}',
+  },
+  {
     type: TemplateTypeEnum.ORDER_CONFIRMATION,
     jobName: MailJobName.SEND_ORDER_CONFIRMATION,
     filename: 'order-confirmation.mjml',

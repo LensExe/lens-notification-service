@@ -25,7 +25,6 @@
   </mj-head>
 
   <mj-body background-color="#f4f6f9">
-
     <!-- Header -->
     <mj-section background-color="#f4f6f9" padding="40px 0 0">
       <mj-column>
@@ -49,14 +48,9 @@
           letter-spacing="-0.5px"
           padding-bottom="8px"
         >
-          {{appName}}
+          {{ appName }}
         </mj-text>
-        <mj-text
-          align="center"
-          font-size="14px"
-          color="rgba(255,255,255,0.85)"
-          padding-top="0"
-        >
+        <mj-text align="center" font-size="14px" color="rgba(255,255,255,0.85)" padding-top="0">
           Xác thực danh tính
         </mj-text>
       </mj-column>
@@ -66,7 +60,8 @@
     <mj-section background-color="#ffffff" padding="40px 40px 28px">
       <mj-column>
         <mj-text font-size="16px" color="#374151" padding-bottom="8px">
-          Xin chào <strong>{{userName}}</strong>,
+          Xin chào <strong>{{ userName }}</strong
+          >,
         </mj-text>
         <mj-text font-size="15px" color="#6b7280" padding-top="0" padding-bottom="28px">
           Chúng tôi nhận được yêu cầu xác thực tài khoản của bạn. Vui lòng sử dụng mã OTP dưới đây:
@@ -75,17 +70,30 @@
         <!-- OTP Box -->
         <mj-text align="center" background-color="#f3f0ff" padding="24px 20px">
           <span class="otp-label">Mã xác thực</span><br />
-          <span class="otp-code">{{otpCode}}</span>
+          <span class="otp-code">{{ otpCode }}</span>
         </mj-text>
 
-        <mj-text align="center" font-size="14px" color="#6b7280" padding-top="20px" padding-bottom="20px">
-          ⏱ Mã này có hiệu lực trong <strong style="color:#374151;">{{expiresInMinutes}} phút</strong>
+        <mj-text
+          align="center"
+          font-size="14px"
+          color="#6b7280"
+          padding-top="20px"
+          padding-bottom="20px"
+        >
+          ⏱ Mã này có hiệu lực trong
+          <strong style="color: #374151">{{ expiresInMinutes }} phút</strong>
         </mj-text>
 
         <!-- Warning Box -->
-        <mj-text font-size="13px" color="#92400e" line-height="1.6" background-color="#fff7ed" padding="14px 16px">
-          ⚠️ <strong>Bảo mật:</strong> Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên của chúng tôi.
-          Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.
+        <mj-text
+          font-size="13px"
+          color="#92400e"
+          line-height="1.6"
+          background-color="#fff7ed"
+          padding="14px 16px"
+        >
+          ⚠️ <strong>Bảo mật:</strong> Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên của chúng
+          tôi. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.
         </mj-text>
       </mj-column>
     </mj-section>
@@ -99,7 +107,7 @@
     >
       <mj-column>
         <mj-text align="center" font-size="12px" color="#9ca3af" padding="0">
-          © {{year}} {{appName}}. Tất cả quyền được bảo lưu.
+          © {{ year }} {{ appName }}. Tất cả quyền được bảo lưu.
         </mj-text>
       </mj-column>
     </mj-section>
@@ -109,6 +117,5 @@
         <mj-image width="1px" src="" />
       </mj-column>
     </mj-section>
-
   </mj-body>
 </mjml>

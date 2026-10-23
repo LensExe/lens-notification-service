@@ -96,6 +96,7 @@ Tất cả endpoint yêu cầu `Authorization: Bearer <Keycloak access token>`. 
 | POST   | /api/v1/notifications/mark-read       | Đánh dấu tất cả thông báo của JWT sub đã đọc |
 
 jobName: `send-otp-email`, `send-transactional-email`, `send-welcome-email`,
+`send-password-reset-email`,
 `send-order-confirmation-email`, `send-payment-receipt-email`, `send-shipping-update-email`,
 `send-promotion-email`. Template catalog and payload examples: [Email templates](md/email-template-catalog.md).
 
