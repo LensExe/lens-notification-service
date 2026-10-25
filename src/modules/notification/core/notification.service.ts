@@ -59,8 +59,7 @@ export class NotificationService {
       this.gateway.sendBookingEvent(userId, {
         event_id: typeof eventId === 'string' ? eventId : saved.id,
         event_type: eventType,
-        occurred_at:
-          typeof occurredAt === 'string' ? occurredAt : new Date().toISOString(),
+        occurred_at: typeof occurredAt === 'string' ? occurredAt : new Date().toISOString(),
         data: bookingData,
       });
     }
@@ -68,8 +67,7 @@ export class NotificationService {
   }
 
   private asRecord(value: unknown): Record<string, unknown> {
-    if (typeof value !== 'object' || value === null || Array.isArray(value))
-      return {};
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
     return value as Record<string, unknown>;
   }
 

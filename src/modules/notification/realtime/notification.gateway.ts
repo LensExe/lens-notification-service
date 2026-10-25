@@ -33,9 +33,10 @@ export class NotificationGateway
     server.use((socket, next) => {
       try {
         const authToken: unknown = socket.handshake.auth?.token;
-        const token = typeof authToken === 'string' && authToken.trim()
-          ? authToken
-          : readCookie(socket.handshake.headers.cookie, 'keycloak_access_token');
+        const token =
+          typeof authToken === 'string' && authToken.trim()
+            ? authToken
+            : readCookie(socket.handshake.headers.cookie, 'keycloak_access_token');
         if (!token) {
           throw new Error('Socket.IO auth token required');
         }

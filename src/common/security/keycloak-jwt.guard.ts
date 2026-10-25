@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { timingSafeEqual } from 'node:crypto';
 import { Request } from 'express';
 import { KeycloakJwtVerifier, Principal } from './keycloak-jwt.verifier';
@@ -13,7 +19,9 @@ export class KeycloakJwtGuard implements CanActivate {
     if (context.getType() !== 'http') return true; // Gateway verifies WebSocket handshakes locally.
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const match = /^Bearer ([^\s]+)$/i.exec(request.headers.authorization ?? '');
-    const cookieToken = match ? undefined : readCookie(request.headers.cookie, 'keycloak_access_token');
+    const cookieToken = match
+      ? undefined
+      : readCookie(request.headers.cookie, 'keycloak_access_token');
     const token = match?.[1] ?? cookieToken;
     if (!token) throw new UnauthorizedException('Bearer token required');
     if (cookieToken && !isSafeMethod(request.method)) {
