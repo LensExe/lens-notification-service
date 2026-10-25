@@ -20,6 +20,7 @@ interface ChatMessagePayload {
   id: string;
   channel_id: string;
   sender_id: string;
+  sender_kind?: 'user' | 'ai';
   client_message_id: string;
   type: 'text' | 'image' | 'file';
   content: string;
@@ -338,6 +339,10 @@ export class ChatEventsConsumer implements OnModuleInit, OnModuleDestroy {
       throw new InvalidChatEventError('data.message.channel_id must equal data.channel_id');
     }
     const senderId = this.requireString(value.sender_id, 'data.message.sender_id');
+    const senderKind = value.sender_kind;
+    if (senderKind !== undefined && senderKind !== 'user' && senderKind !== 'ai') {
+      throw new InvalidChatEventError('data.message.sender_kind must be user or ai');
+    }
     const clientMessageId = this.requireString(
       value.client_message_id,
       'data.message.client_message_id',
@@ -361,6 +366,7 @@ export class ChatEventsConsumer implements OnModuleInit, OnModuleDestroy {
       id,
       channel_id: channelId,
       sender_id: senderId,
+      ...(senderKind ? { sender_kind: senderKind } : {}),
       client_message_id: clientMessageId,
       type: value.type,
       content: value.content,
