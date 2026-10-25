@@ -1,16 +1,28 @@
 import { Namespace, Socket } from 'socket.io';
 import { NotificationGateway } from './notification.gateway';
 import { KeycloakJwtVerifier } from '../../../common/security/keycloak-jwt.verifier';
+import { PresenceStore } from './presence.store';
 
 describe('Notification WebSocket identity', () => {
   const verify = jest.fn();
+  const presence = {
+    connect: jest.fn(),
+    refresh: jest.fn(),
+    disconnect: jest.fn(),
+  };
   let gateway: NotificationGateway;
   let authenticate: (socket: Socket, next: (error?: Error) => void) => void;
 
   beforeEach(() => {
     jest.useFakeTimers();
     verify.mockReset();
-    gateway = new NotificationGateway({ verify } as unknown as KeycloakJwtVerifier);
+    presence.connect.mockReset().mockResolvedValue(undefined);
+    presence.refresh.mockReset().mockResolvedValue(undefined);
+    presence.disconnect.mockReset().mockResolvedValue(undefined);
+    gateway = new NotificationGateway(
+      { verify } as unknown as KeycloakJwtVerifier,
+      presence as unknown as PresenceStore,
+    );
     const namespace = {
       use: (middleware: typeof authenticate) => {
         authenticate = middleware;
@@ -72,6 +84,7 @@ describe('Notification WebSocket identity', () => {
     jest.advanceTimersByTime(2000);
     expect(disconnect).toHaveBeenCalledWith(true);
     gateway.handleDisconnect(client);
+    expect(presence.disconnect).toHaveBeenCalledWith('verified-user', 'socket-1');
     expect(jest.getTimerCount()).toBe(0);
   });
 
