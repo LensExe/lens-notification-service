@@ -46,7 +46,31 @@ export class NotificationService {
       created_at: saved.created_at > saved.updated_at ? saved.created_at : saved.updated_at,
     };
     void this.gateway.sendNotification(userId, realtimePayload);
+
+    const eventData = this.asRecord(data);
+    const eventType = eventData.event_type;
+    if (typeof eventType === 'string' && eventType.startsWith('booking.')) {
+      const bookingData = { ...eventData };
+      const eventId = bookingData.event_id;
+      const occurredAt = bookingData.occurred_at;
+      delete bookingData.event_id;
+      delete bookingData.event_type;
+      delete bookingData.occurred_at;
+      this.gateway.sendBookingEvent(userId, {
+        event_id: typeof eventId === 'string' ? eventId : saved.id,
+        event_type: eventType,
+        occurred_at:
+          typeof occurredAt === 'string' ? occurredAt : new Date().toISOString(),
+        data: bookingData,
+      });
+    }
     return saved;
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> {
+    if (typeof value !== 'object' || value === null || Array.isArray(value))
+      return {};
+    return value as Record<string, unknown>;
   }
 
   async getNotifications(userId: string, skip: number, limit: number): Promise<Notification[]> {

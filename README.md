@@ -206,7 +206,7 @@ Mỗi Kafka message value là JSON theo dạng sau. `eventId` phải ổn địn
 }
 ```
 
-`notification.type` hiện nhận một trong các giá trị `welcome`, `order_placed`, `payment_success`, `promotion_started`. Event JSON không hợp lệ hoặc không được hỗ trợ sẽ được chuyển nguyên payload kèm thông tin lỗi vào `notification.events.dlq`. Lỗi tạm thời khi enqueue sẽ không được xác nhận với Kafka để broker gửi lại.
+`notification.type` hiện nhận một trong các giá trị `welcome`, `order_placed`, `order_cancelled`, `payment_success`, `booking_update`, `promotion_started`. Event JSON không hợp lệ hoặc không được hỗ trợ sẽ được chuyển nguyên payload kèm thông tin lỗi vào `notification.events.dlq`. Lỗi tạm thời khi enqueue sẽ không được xác nhận với Kafka để broker gửi lại.
 
 ### Gửi event từ một microservice Node.js
 
@@ -254,6 +254,26 @@ await producer.disconnect();
 Đoạn code trên minh họa gửi một lần. Trong service chạy liên tục, kết nối producer khi ứng dụng khởi động, tái sử dụng producer cho các event và ngắt kết nối khi ứng dụng dừng.
 
 Sau khi producer gửi message, client đã kết nối Socket.IO như hướng dẫn bên dưới sẽ nhận event `notification`. Kafka consumer group phân phối partition giữa các instance notification service. Kafka và BullMQ dùng cơ chế at-least-once; cùng `eventId` được dùng làm BullMQ job ID để ngăn enqueue trùng trong thời gian job còn được giữ lại.
+
+## Nhận booking event realtime
+
+Booking events đi qua cùng `notification.events` và BullMQ để giữ thông báo trong inbox. Khi xử lý notification có `data.event_type` bắt đầu bằng `booking.`, service còn phát một event trạng thái riêng tới room của người nhận đã xác thực:
+
+```json
+{
+  "event_id": "lens-backend:<outbox-id>:<keycloak-sub>",
+  "event_type": "booking.accepted",
+  "occurred_at": "2026-10-25T08:15:00.000Z",
+  "data": {
+    "booking_id": "<booking-id>",
+    "from_status": "pending",
+    "status": "accepted",
+    "updated_at": "2026-10-25T08:15:00.000Z"
+  }
+}
+```
+
+Socket.IO event name là `booking.event` trong namespace `/notification` và path `/api/v1/socket.io`. Các `event_type` gồm `booking.created`, `booking.deposit_paid`, `booking.accepted`, `booking.in_progress`, `booking.shot`, `booking.remaining_paid`, `booking.gallery_ready`, `booking.completed`, `booking.cancelled`, `booking.rejected` và `booking.expired`. Event có thể được giao lại; client nên deduplicate bằng `event_id`. `notification` vẫn được phát riêng để hiển thị toast/inbox.
 
 ## Nhận chat event realtime
 

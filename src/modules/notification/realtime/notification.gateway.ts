@@ -32,8 +32,11 @@ export class NotificationGateway
   afterInit(server: Namespace): void {
     server.use((socket, next) => {
       try {
-        const token: unknown = socket.handshake.auth?.token;
-        if (typeof token !== 'string' || !token.trim()) {
+        const authToken: unknown = socket.handshake.auth?.token;
+        const token = typeof authToken === 'string' && authToken.trim()
+          ? authToken
+          : readCookie(socket.handshake.headers.cookie, 'keycloak_access_token');
+        if (!token) {
           throw new Error('Socket.IO auth token required');
         }
         const principal = this.verifier.verify(token);
@@ -90,10 +93,30 @@ export class NotificationGateway
     this.server.to(`user:${userId}`).emit('chat.event', payload);
   }
 
+  sendBookingEvent(userId: string, payload: unknown): void {
+    this.server.to(`user:${userId}`).emit('booking.event', payload);
+  }
+
   onModuleDestroy(): void {
     for (const timer of this.expiryTimers.values()) clearInterval(timer);
     this.expiryTimers.clear();
     for (const timer of this.presenceTimers.values()) clearInterval(timer);
     this.presenceTimers.clear();
   }
+}
+
+function readCookie(header: string | string[] | undefined, name: string): string | undefined {
+  const cookieHeader = Array.isArray(header) ? header.join(';') : header;
+  if (!cookieHeader) return undefined;
+  for (const part of cookieHeader.split(';')) {
+    const separator = part.indexOf('=');
+    if (separator < 0 || part.slice(0, separator).trim() !== name) continue;
+    const value = part.slice(separator + 1).trim();
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return undefined;
 }
