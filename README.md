@@ -206,7 +206,7 @@ Mỗi Kafka message value là JSON theo dạng sau. `eventId` phải ổn địn
 }
 ```
 
-`notification.type` hiện nhận một trong các giá trị `welcome`, `order_placed`, `order_cancelled`, `payment_success`, `booking_update`, `promotion_started`. Event JSON không hợp lệ hoặc không được hỗ trợ sẽ được chuyển nguyên payload kèm thông tin lỗi vào `notification.events.dlq`. Lỗi tạm thời khi enqueue sẽ không được xác nhận với Kafka để broker gửi lại.
+`notification.type` hiện nhận một trong các giá trị `welcome`, `order_placed`, `order_cancelled`, `payment_success`, `booking_update`, `promotion_started`, `report_update`. Event JSON không hợp lệ hoặc không được hỗ trợ sẽ được chuyển nguyên payload kèm thông tin lỗi vào `notification.events.dlq`. Lỗi tạm thời khi enqueue sẽ không được xác nhận với Kafka để broker gửi lại.
 
 ### Gửi event từ một microservice Node.js
 

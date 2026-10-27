@@ -83,7 +83,7 @@ Các trường:
 - `eventType`: tên sự kiện nguồn để log/đối chiếu, ví dụ `order.created` hoặc `payment.succeeded`.
 - `priority`: `instant` hoặc `emergency`; có thể bỏ qua và mặc định là `instant`.
 - `notification.userId`: Keycloak `sub` của user; không phải email, username hay ID của order.
-- `notification.type`: hiện chỉ nhận `welcome`, `order_placed`, `payment_success`, `promotion_started`.
+- `notification.type`: hiện nhận `welcome`, `order_placed`, `payment_success`, `promotion_started`, `report_update`.
 - `notification.data`: object tuỳ chọn để frontend dùng khi nhận notification.
 
 Event sai JSON hoặc không đúng contract được chuyển sang topic DLQ. Lỗi tạm thời khi notification-service enqueue vào BullMQ sẽ làm message được Kafka gửi lại. Cùng `eventId` được dùng để tạo BullMQ job ID, giúp tránh enqueue trùng khi job vẫn còn được lưu trong queue.
